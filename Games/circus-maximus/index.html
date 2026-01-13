@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circus Maximus - Tabletop Simulation</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>Circus Maximus</h1>
+            <p class="subtitle">Tabletop Simulation</p>
+        </header>
+        
+        <main id="game-container">
+            <!-- Game will be rendered here -->
+            <div id="game-setup" class="screen active">
+                <h2>Game Setup</h2>
+                <div class="setup-options">
+                    <label>
+                        Number of Players:
+                        <select id="player-count">
+                            <option value="2">2 Players</option>
+                            <option value="3">3 Players</option>
+                            <option value="4">4 Players</option>
+                        </select>
+                    </label>
+                    <div id="player-config"></div>
+                    <button id="start-game-btn">Start Game</button>
+                </div>
+            </div>
+            
+            <div id="game-play" class="screen">
+                <!-- Game interface will be rendered here -->
+            </div>
+            
+            <div id="game-end" class="screen">
+                <!-- Game end screen will be rendered here -->
+            </div>
+        </main>
+        
+        <footer>
+            <button id="help-btn">Help</button>
+            <button id="save-btn">Save Game</button>
+            <button id="load-btn">Load Game</button>
+        </footer>
+    </div>
+    
+    <!-- Game scripts -->
+    <script type="module" src="js/utils/config.js"></script>
+    <script type="module" src="js/game/GameState.js"></script>
+    <script type="module" src="js/game/Board.js"></script>
+    <script type="module" src="js/game/Player.js"></script>
+    <script type="module" src="js/game/Phases.js"></script>
+    <script type="module" src="js/game/GameEngine.js"></script>
+    <script type="module" src="js/utils/rules.js"></script>
+    <script type="module" src="js/ai/strategies/BasicStrategy.js"></script>
+    <script type="module" src="js/ai/AIPlayer.js"></script>
+    <script type="module" src="js/ui/GameControls.js"></script>
+    <script type="module" src="js/ui/GameDisplay.js"></script>
+    <script type="module" src="js/ui/UIManager.js"></script>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

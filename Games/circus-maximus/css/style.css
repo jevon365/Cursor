@@ -1,0 +1,287 @@
+/* Circus Maximus - Minimal MVP Styles */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #f5f5f5;
+    color: #333;
+    line-height: 1.6;
+}
+
+#app {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    font-size: 2.5em;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.subtitle {
+    color: #7f8c8d;
+    font-size: 0.9em;
+}
+
+main {
+    flex: 1;
+    background: white;
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.screen {
+    display: none;
+}
+
+.screen.active {
+    display: block;
+}
+
+.setup-options {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.setup-options label {
+    display: block;
+    margin-bottom: 15px;
+    font-weight: 500;
+}
+
+.setup-options select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1em;
+}
+
+button {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 4px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+button:hover {
+    background: #2980b9;
+}
+
+button:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+}
+
+#player-config {
+    margin: 20px 0;
+}
+
+.player-type {
+    margin-bottom: 10px;
+    padding: 10px;
+    background: #ecf0f1;
+    border-radius: 4px;
+}
+
+.player-type label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.player-type select {
+    flex: 1;
+}
+
+footer {
+    margin-top: 20px;
+    text-align: center;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+footer button {
+    background: #95a5a6;
+    padding: 8px 16px;
+    font-size: 0.9em;
+}
+
+footer button:hover {
+    background: #7f8c8d;
+}
+
+/* Game display styles */
+#game-play {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.game-info {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px;
+    background: #ecf0f1;
+    border-radius: 4px;
+}
+
+.current-phase {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.current-player {
+    font-weight: bold;
+    color: #3498db;
+}
+
+.game-board {
+    min-height: 300px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 2px solid #dee2e6;
+}
+
+.actions-panel {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.action-btn {
+    padding: 15px;
+    background: white;
+    border: 2px solid #3498db;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.3s;
+}
+
+.action-btn:hover {
+    background: #3498db;
+    color: white;
+}
+
+.action-btn:disabled {
+    border-color: #bdc3c7;
+    color: #bdc3c7;
+    cursor: not-allowed;
+}
+
+.action-btn:disabled:hover {
+    background: white;
+}
+
+.player-info {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.player-card {
+    flex: 1;
+    min-width: 200px;
+    padding: 15px;
+    background: white;
+    border: 2px solid #dee2e6;
+    border-radius: 4px;
+}
+
+.player-card.active {
+    border-color: #3498db;
+    background: #ebf5fb;
+}
+
+.player-card h3 {
+    margin-bottom: 10px;
+    color: #2c3e50;
+}
+
+.resource {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.error-message {
+    padding: 10px;
+    background: #e74c3c;
+    color: white;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.success-message {
+    padding: 10px;
+    background: #27ae60;
+    color: white;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+/* Game end screen */
+#game-end {
+    text-align: center;
+}
+
+.winner-announcement {
+    font-size: 2em;
+    color: #27ae60;
+    margin-bottom: 20px;
+}
+
+.final-scores {
+    max-width: 500px;
+    margin: 20px auto;
+}
+
+.score-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    margin-bottom: 5px;
+    background: #ecf0f1;
+    border-radius: 4px;
+}
+
+/* Help/instructions */
+.help-content {
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: left;
+}
+
+.help-content h3 {
+    margin-top: 20px;
+    color: #2c3e50;
+}
+
+.help-content ul {
+    margin-left: 20px;
+    margin-top: 10px;
+}

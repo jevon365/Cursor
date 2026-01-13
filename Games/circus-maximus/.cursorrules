@@ -1,0 +1,43 @@
+# Circus Maximus - Game Development Rules
+
+## General Guidelines
+- Write clean, maintainable code
+- Use clear variable and function names
+- Comment complex game logic
+- Follow best practices for vanilla JavaScript
+- Prioritize playability and shareability
+
+## Code Style
+- Keep functions focused and single-purpose
+- Use consistent naming conventions (camelCase for variables/functions, PascalCase for classes)
+- Prefer composition over inheritance where applicable
+- Optimize for performance in game loops
+- Use ES6+ features (const/let, arrow functions, classes, modules)
+
+## Project Structure
+- Organize code by feature/component (game/, ai/, ui/, utils/)
+- Separate game logic from rendering
+- Keep all game numbers in config.js for easy balance tweaking
+- Maintain clear separation between phases, mechanics, and UI
+
+## Game-Specific Guidelines
+- All numeric values must be in config.js, not hardcoded
+- Game state must be serializable for save/load
+- Support 2-4 players
+- Handle all phases and win conditions
+- AI must be phase-aware and win-condition aware
+- Error handling should provide clear feedback to players
+
+## Testing
+- Test game mechanics thoroughly
+- Consider edge cases in gameplay
+- Test with different player counts
+- Verify all win conditions work correctly
+- Document known bugs or limitations
+
+## MVP Focus
+- Functional over beautiful - get game working first
+- Clear instructions for non-tech users
+- Robust error handling
+- Save/load functionality
+- AI that can complete games

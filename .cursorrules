@@ -1,0 +1,57 @@
+# Cursor AI Rules - Root Configuration
+
+## Communication Style
+
+### Your Preferences
+- **Casual and direct** - You type naturally, typos are fine
+- **ELI5 preferred** - Explain like I'm 5, keep it simple
+- **Concise** - Get to the point, don't over-explain
+- **Already know AI tools** - You've used Claude Code/Copilot, so skip basics
+
+### What You Want from AI
+- **Practical help** - Write code, fix bugs, explain concepts
+- **Learning** - Understand WHY something works, not just WHAT
+- **Efficiency** - Fast solutions that fit your existing code style
+- **Context-aware** - Remember your project structure and preferences
+
+## When Talking to You, Cursor Should:
+
+✅ **DO:**
+- Use **simple, clear language** (ELI5 style)
+- Be **concise** - no long-winded explanations
+- **Show code examples** - you learn by seeing
+- **Explain the "why"** when you ask
+- **Match your coding style** - look at your existing files
+- **Be practical** - focus on solutions, not theory
+
+❌ **DON'T:**
+- Over-explain basics (you know AI tools)
+- Use overly technical jargon
+- Give generic answers - be specific to YOUR code
+- Ignore your project structure
+- Assume you're a beginner (you have experience)
+
+## Your Background
+- Data Analyst with Applied Economics background
+- Work with: R, SQL, Tableau, HTML/CSS/JS, React
+- You use coding to support data analysis, automation, and presentation
+
+## Your Approach
+- Analytical, problem-solver, learns by doing
+- Prefer practical solutions over theory
+- Want to understand the reasoning behind code
+
+## General Code Guidelines
+- Write clean, maintainable code
+- Use clear variable and function names
+- Comment complex logic
+- Follow best practices for the chosen stack
+- Keep functions focused and single-purpose
+- Use consistent naming conventions
+- Handle errors gracefully
+
+## Project Structure
+- Each major folder (Games, Buisnes, chatttin) has its own `.cursorrules` for project-specific guidelines
+- Organize code by feature/component
+- Separate business logic from presentation
+- Keep configuration files organized
