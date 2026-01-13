@@ -1,0 +1,42 @@
+# Build outputs
+build/
+dist/
+*.exe
+*.app
+*.dmg
+
+# Dependencies
+node_modules/
+venv/
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Game assets (if large)
+*.zip
+*.rar
+*.7z
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp

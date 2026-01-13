@@ -1,0 +1,29 @@
+# Business Projects Rules
+
+## General Guidelines
+- Write professional, maintainable code
+- Use clear variable and function names
+- Comment business logic and data transformations
+- Follow best practices for the chosen stack
+
+## Code Style
+- Keep functions focused and single-purpose
+- Use consistent naming conventions
+- Handle errors gracefully
+- Write code that's easy to understand and modify
+
+## Data & Security
+- Never commit sensitive data (API keys, passwords, etc.)
+- Use environment variables for configuration
+- Validate and sanitize user inputs
+- Follow data privacy best practices
+
+## Project Structure
+- Organize code by feature/component
+- Separate business logic from presentation
+- Keep configuration files organized
+
+## Documentation
+- Document API endpoints and data models
+- Explain complex business logic
+- Keep README files up to date

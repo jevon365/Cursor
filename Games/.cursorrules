@@ -1,0 +1,23 @@
+# Game Development Rules
+
+## General Guidelines
+- Write clean, maintainable code
+- Use clear variable and function names
+- Comment complex game logic
+- Follow best practices for the chosen game engine/framework
+
+## Code Style
+- Keep functions focused and single-purpose
+- Use consistent naming conventions
+- Prefer composition over inheritance where applicable
+- Optimize for performance in game loops
+
+## Project Structure
+- Organize code by feature/component
+- Separate game logic from rendering
+- Keep assets organized in appropriate folders
+
+## Testing
+- Test game mechanics thoroughly
+- Consider edge cases in gameplay
+- Document known bugs or limitations
