@@ -9,6 +9,8 @@ import { Board } from './Board.js';
 import { Player } from './Player.js';
 import { Phases } from './Phases.js';
 import { MarketManager } from './Market.js';
+import { EventCardManager } from './EventCardManager.js';
+import { ActCardManager } from './ActCardManager.js';
 import { CONFIG } from '../utils/config.js';
 
 export class GameEngine {
@@ -18,6 +20,8 @@ export class GameEngine {
         this.board = new Board(config);
         this.phases = new Phases(config);
         this.markets = new MarketManager(config);
+        this.events = new EventCardManager(config);
+        this.acts = new ActCardManager(config);
         this.state.board = this.board;
         this.initialized = false;
     }
@@ -37,6 +41,13 @@ export class GameEngine {
         this.state.initialize(playerObjects);
         this.board.clearWorkers();
         this.phases.reset();
+        this.events.initializeDeck();
+        this.acts.initializeActPool();
+        this.acts.setupRound();
+        
+        // Draw and resolve first event
+        this.events.drawEvent();
+        this.events.resolveEvent(this.state, this.markets);
         
         // Set initial phase
         const initialPhase = this.phases.getCurrentPhase();
@@ -64,7 +75,11 @@ export class GameEngine {
                 spaces: this.board.spaces,
                 workerPlacements: this.board.workerPlacements
             },
-            markets: this.markets.getAllStates()
+            markets: this.markets.getAllStates(),
+            currentEvent: this.events.getCurrentEvent(),
+            availableActs: this.acts.getAvailableActs(),
+            blockedTracks: this.state.blockedTracks,
+            disabledLocations: this.state.disabledLocations
         };
     }
 
@@ -102,6 +117,7 @@ export class GameEngine {
         }
 
         const currentPlayer = this.state.getCurrentPlayer();
+        const currentPhase = this.state.currentPhase;
         
         // Validate action with phase rules
         const validation = this.phases.validateAction(action, this.state);
@@ -109,8 +125,52 @@ export class GameEngine {
             return { success: false, error: validation.reason };
         }
 
-        // TODO: Execute the action based on action type
-        // This will be implemented after rulebook analysis
+        // Execute the action based on action type
+        switch (action.type) {
+            case 'bid':
+                if (currentPhase === 'bidOnActs') {
+                    const result = currentPlayer.placeBid(action.actId, action.coins);
+                    if (result) {
+                        this.acts.placeBid(currentPlayer.id, action.actId, action.coins);
+                    } else {
+                        return { success: false, error: 'Insufficient coins' };
+                    }
+                }
+                break;
+            case 'pass':
+                // Pass action - no execution needed
+                break;
+            case 'placeWorker':
+                if (currentPhase === 'placeWorkers') {
+                    // Check if location is disabled
+                    if (this.state.disabledLocations && this.state.disabledLocations.includes(action.locationId)) {
+                        return { success: false, error: 'Location is disabled this round' };
+                    }
+                    // Check worker cost
+                    const workerCost = this.config.limits.workerDeployCost + (this.state.workerCostModifier || 0);
+                    if (currentPlayer.getResource('coins') < workerCost) {
+                        return { success: false, error: 'Insufficient coins to deploy worker' };
+                    }
+                    if (currentPlayer.workers.available <= 0) {
+                        return { success: false, error: 'No available workers' };
+                    }
+                    currentPlayer.removeResource('coins', workerCost);
+                    currentPlayer.placeWorker();
+                    this.board.placeWorker(currentPlayer.id, action.locationId);
+                }
+                break;
+            case 'buyResource':
+                if (currentPhase === 'buyResources') {
+                    const priceModifier = this.state.marketPriceModifier || 0;
+                    const result = this.markets.buyResource(action.resourceType, currentPlayer, priceModifier);
+                    if (!result.success) {
+                        return { success: false, error: result.error || 'Cannot buy resource' };
+                    }
+                }
+                break;
+            default:
+                return { success: false, error: 'Unknown action type' };
+        }
         
         // Record action
         this.state.recordAction(action);
@@ -137,9 +197,30 @@ export class GameEngine {
         if (this.phases.shouldEndPhase(this.state)) {
             const currentPhaseId = this.state.currentPhase;
             
+            // Handle phase-specific logic
+            if (currentPhaseId === 'performActs') {
+                // Resolve all selected acts
+                const selectedActs = this.acts.getSelectedActs();
+                for (const act of selectedActs) {
+                    this.acts.resolveAct(act.id, this.state);
+                }
+            }
+            
             // Restock markets during cleanup phase (before phase end)
             if (currentPhaseId === 'cleanup') {
                 this.markets.restockAll(this.state.players.length);
+                
+                // Clear event effects and draw new event for next round
+                const eventEffects = this.events.endRound();
+                this.state.blockedTracks = eventEffects.blockedTracks;
+                this.state.disabledLocations = eventEffects.disabledLocations;
+                this.state.marketPriceModifier = eventEffects.marketPriceModifier;
+                this.state.workerCostModifier = eventEffects.workerCostModifier;
+                
+                // Setup next round
+                this.acts.setupRound();
+                this.events.drawEvent();
+                this.events.resolveEvent(this.state, this.markets);
             }
             
             this.phases.onPhaseEnd(this.state);
@@ -170,6 +251,9 @@ export class GameEngine {
     saveGame() {
         const saveData = {
             state: this.state.serialize(),
+            events: this.events.serialize(),
+            acts: this.acts.serialize(),
+            markets: this.markets.serialize(),
             config: this.config,
             version: '1.0.0'
         };
@@ -183,6 +267,15 @@ export class GameEngine {
         try {
             const data = JSON.parse(saveData);
             this.state.deserialize(data.state);
+            if (data.events) {
+                this.events.deserialize(data.events);
+            }
+            if (data.acts) {
+                this.acts.deserialize(data.acts);
+            }
+            if (data.markets) {
+                this.markets.deserialize(data.markets);
+            }
             this.initialized = true;
             return { success: true };
         } catch (error) {

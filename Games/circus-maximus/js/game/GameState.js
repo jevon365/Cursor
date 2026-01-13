@@ -19,6 +19,11 @@ export class GameState {
         this.history = []; // Action history for replay/debugging
         this.board = null; // Will be set by Board class
         this.turnOrder = null; // Current turn order for phase (array of player indices)
+        // Event and act card state
+        this.blockedTracks = []; // Tracks blocked by current event
+        this.disabledLocations = []; // Locations disabled by current event
+        this.marketPriceModifier = 0; // Price modifier from events
+        this.workerCostModifier = 0; // Worker cost modifier from events
     }
 
     /**
@@ -163,7 +168,11 @@ export class GameState {
             gameOver: this.gameOver,
             winner: this.winner,
             history: this.history,
-            board: this.board ? this.board.serialize() : null
+            board: this.board ? this.board.serialize() : null,
+            blockedTracks: this.blockedTracks,
+            disabledLocations: this.disabledLocations,
+            marketPriceModifier: this.marketPriceModifier,
+            workerCostModifier: this.workerCostModifier
         });
     }
 
@@ -179,6 +188,10 @@ export class GameState {
         this.gameOver = state.gameOver;
         this.winner = state.winner;
         this.history = state.history;
+        this.blockedTracks = state.blockedTracks || [];
+        this.disabledLocations = state.disabledLocations || [];
+        this.marketPriceModifier = state.marketPriceModifier || 0;
+        this.workerCostModifier = state.workerCostModifier || 0;
         
         // Reconstruct players
         this.players = state.players.map(pData => {

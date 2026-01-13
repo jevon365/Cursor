@@ -21,9 +21,9 @@ export const CONFIG = {
             prisoners: 0
         },
         startingTracks: {
-            empire: 0,
-            population: 0,
-            church: 0
+            empire: 3,
+            population: 3,
+            church: 3
         }
     },
 
@@ -32,17 +32,17 @@ export const CONFIG = {
         empire: {
             name: "Empire",
             min: -10, // Minimum track value
-            max: 20   // Maximum track value (win threshold)
+            max: 15   // Maximum track value (win threshold)
         },
         population: {
             name: "Population",
             min: -10,
-            max: 20
+            max: 15
         },
         church: {
             name: "Church",
             min: -10,
-            max: 20
+            max: 15
         }
     },
 
@@ -184,38 +184,450 @@ export const CONFIG = {
         }
     },
 
-    // Act Cards Structure
-    // Note: Specific acts will be created by another agent
-    // This is the structure they should follow
-    actCardStructure: {
-        // Example structure:
-        // id: "animal_show",
-        // name: "Animal Show",
-        // cost: { mummers: 1, animals: 2 }, // Resources needed to participate
-        // tracks: {
-        //     empire: 2,    // +2 to empire track
-        //     population: 1, // +1 to population track
-        //     church: -1    // -1 to church track
-        // },
-        // hasWinner: false, // Some acts have winners, some don't
-        // consumesResources: true, // Whether resources are consumed or returned
-        // coinReward: 3, // Coins awarded to participants
-        // nonParticipantPenalty: { population: -1 } // Track penalty for not participating
+    // Act Cards - 15 Regular Acts (5 displayed per round, selected ones replaced in cleanup)
+    // Structure: id, name, coinCost (paid during act performance, completely separate from bid), 
+    // resourceCost (required to participate, purchased during buyResources phase),
+    // tracks (winner gets full, all participants if no winner),
+    // hasWinner, consumesResources (true = resources consumed, false = returned),
+    //   - For acts with winners: loser's resources consumed, winner's returned
+    //   - For acts without winners: all resources consumed if true, all returned if false
+    // coinReward (all participants get this), nonParticipantPenalty (applied if not in ANY selected act)
+    // Note: For acts with winners, only winner gets track advancement + coins. Losers get coins only.
+    // Note: For acts without winners, all participants get track advancement + coins.
+    // Note: Bidding uses coins only (not resources). coinCost is separate from bid.
+    // Note: Track range is 3-15 (starting at 3), so rewards are balanced accordingly.
+    actCards: {
+        // CHURCH TRACK ACTS (5 acts)
+        choral_performance: {
+            id: "choral_performance",
+            name: "Choral Performance",
+            coinCost: 0,
+            resourceCost: { mummers: 1 },
+            tracks: { church: 1, population: 1 },
+            hasWinner: false,
+            consumesResources: false,
+            coinReward: 2,
+            nonParticipantPenalty: { church: -1 },
+            description: "Religious hymns and choral music performed for the faithful"
+        },
+        religious_play: {
+            id: "religious_play",
+            name: "Religious Play",
+            coinCost: 0,
+            resourceCost: { mummers: 2 },
+            tracks: { church: 2, empire: 1 },
+            hasWinner: true,
+            consumesResources: false,
+            coinReward: 3,
+            nonParticipantPenalty: { church: -1 },
+            description: "Mystery plays and religious dramas depicting sacred stories"
+        },
+        procession_martyrs: {
+            id: "procession_martyrs",
+            name: "Procession of Martyrs",
+            coinCost: 0,
+            resourceCost: { mummers: 1, slaves: 1 },
+            tracks: { church: 3, population: -1 },
+            hasWinner: false,
+            consumesResources: true, // Both mummers and slaves consumed (slaves die in reenactment)
+            coinReward: 4,
+            nonParticipantPenalty: { church: -2 },
+            description: "Reenactment of Christian martyrdoms, demonstrating faith"
+        },
+        hymn_competition: {
+            id: "hymn_competition",
+            name: "Hymn Competition",
+            coinCost: 0,
+            resourceCost: { mummers: 1 },
+            tracks: { church: 2 },
+            hasWinner: true,
+            consumesResources: false,
+            coinReward: 2,
+            nonParticipantPenalty: { church: -1 },
+            description: "Competitive singing of hymns for religious festivals"
+        },
+        sacred_music: {
+            id: "sacred_music",
+            name: "Sacred Music Festival",
+            coinCost: 1,
+            resourceCost: { mummers: 2 },
+            tracks: { church: 3, population: 1 },
+            hasWinner: false,
+            consumesResources: false,
+            coinReward: 4,
+            nonParticipantPenalty: { church: -2 },
+            description: "Grand festival of sacred music and religious celebration"
+        },
+
+        // POPULATION TRACK ACTS (5 acts)
+        gladiator_combat: {
+            id: "gladiator_combat",
+            name: "Gladiator Combat",
+            coinCost: 0,
+            resourceCost: { slaves: 2 },
+            tracks: { population: 3, empire: 1 },
+            hasWinner: true,
+            consumesResources: true, // Loser's slaves die, winner's slaves return
+            coinReward: 5,
+            nonParticipantPenalty: { population: -2 },
+            description: "Classic gladiatorial combat to the death"
+        },
+        bestiarii_vs_beasts: {
+            id: "bestiarii_vs_beasts",
+            name: "Bestiarii vs. Beasts",
+            coinCost: 0,
+            resourceCost: { animals: 1, slaves: 1 },
+            tracks: { population: 3, church: -1 },
+            hasWinner: true,
+            consumesResources: true, // Loser's resources consumed, winner's returned
+            coinReward: 6,
+            nonParticipantPenalty: { population: -2 },
+            description: "Beast fighters battle wild animals in the arena"
+        },
+        venatio: {
+            id: "venatio",
+            name: "Venatio (Animal Hunt)",
+            coinCost: 0,
+            resourceCost: { animals: 2 },
+            tracks: { population: 2, empire: 1 },
+            hasWinner: false,
+            consumesResources: true, // Animals killed
+            coinReward: 4,
+            nonParticipantPenalty: { population: -1 },
+            description: "Staged animal hunts showcasing exotic beasts"
+        },
+        animal_feeding: {
+            id: "animal_feeding",
+            name: "Animal Feeding",
+            coinCost: 0,
+            resourceCost: { animals: 2 }, // No prisoners in regular acts
+            tracks: { population: 3, church: -1 },
+            hasWinner: false,
+            consumesResources: true, // Animals consumed
+            coinReward: 5,
+            nonParticipantPenalty: { population: -2 },
+            description: "Feeding slaves to wild animals for public spectacle"
+        },
+        slave_battle: {
+            id: "slave_battle",
+            name: "Slave Battle Royale",
+            coinCost: 0,
+            resourceCost: { slaves: 3 },
+            tracks: { population: 4, empire: 1 },
+            hasWinner: true,
+            consumesResources: true, // Loser's slaves die (all 3), winner's return
+            coinReward: 7,
+            nonParticipantPenalty: { population: -2 },
+            description: "Massive battle between slave armies"
+        },
+
+        // EMPIRE TRACK ACTS (5 acts)
+        chariot_race: {
+            id: "chariot_race",
+            name: "Chariot Race",
+            coinCost: 0,
+            resourceCost: { animals: 2 }, // Horses
+            tracks: { empire: 3, population: 2 },
+            hasWinner: true,
+            consumesResources: false, // Horses return
+            coinReward: 6,
+            nonParticipantPenalty: { empire: -1 },
+            description: "The most popular Roman spectacle - chariot racing"
+        },
+        ludi_militaris: {
+            id: "ludi_militaris",
+            name: "Ludi Militaris (War Games)",
+            coinCost: 0,
+            resourceCost: { slaves: 2 },
+            tracks: { empire: 4, population: 1 },
+            hasWinner: true,
+            consumesResources: true, // Loser's slaves die, winner's return
+            coinReward: 7,
+            nonParticipantPenalty: { empire: -2 },
+            description: "Reenactment of famous military battles"
+        },
+        triumph_parade: {
+            id: "triumph_parade",
+            name: "Triumph Parade",
+            coinCost: 0,
+            resourceCost: { mummers: 2, animals: 1 },
+            tracks: { empire: 3, population: 2 },
+            hasWinner: false,
+            consumesResources: false,
+            coinReward: 5,
+            nonParticipantPenalty: { empire: -1 },
+            description: "Victory procession celebrating military conquest"
+        },
+        cavalry_display: {
+            id: "cavalry_display",
+            name: "Cavalry Display",
+            coinCost: 0,
+            resourceCost: { animals: 2 },
+            tracks: { empire: 2, population: 1 },
+            hasWinner: false,
+            consumesResources: false,
+            coinReward: 4,
+            nonParticipantPenalty: { empire: -1 },
+            description: "Military horse demonstrations showcasing imperial power"
+        },
+        naumachia: {
+            id: "naumachia",
+            name: "Naumachia (Naval Battle)",
+            coinCost: 3, // Paid during act performance (completely separate from bid)
+            resourceCost: { slaves: 3 },
+            tracks: { empire: 4, population: 2 }, // High reward for high cost
+            hasWinner: true,
+            consumesResources: true, // Loser's slaves die, winner's return
+            coinReward: 8,
+            nonParticipantPenalty: { empire: -2, population: -1 },
+            description: "Staged sea battles in flooded arenas - the ultimate spectacle"
+        }
     },
 
-    // Final Act Types (one selected each round)
+    // Final Execution Acts (all 3 always available, players can bid on any)
+    // These require prisoners and advance the selected track
+    // Note: All 3 are displayed each round, players choose which to bid on
     finalActs: {
         torture: {
-            name: "Torture",
-            track: "empire" // Advances empire track
+            id: "torture",
+            name: "Public Torture",
+            coinCost: 0,
+            resourceCost: { prisoners: 1 },
+            tracks: { empire: 2 },
+            hasWinner: false,
+            consumesResources: true, // Prisoner consumed
+            coinReward: 3,
+            nonParticipantPenalty: { empire: -1 },
+            description: "Public torture demonstration of imperial authority"
         },
-        militaryExecution: {
+        military_execution: {
+            id: "military_execution",
             name: "Military Execution",
-            track: "population" // Advances population track
+            coinCost: 0,
+            resourceCost: { prisoners: 1 },
+            tracks: { population: 2 },
+            hasWinner: false,
+            consumesResources: true, // Prisoner consumed
+            coinReward: 3,
+            nonParticipantPenalty: { population: -1 },
+            description: "Public execution by military methods for the masses"
         },
         crucifixion: {
+            id: "crucifixion",
             name: "Crucifixion",
-            track: "church" // Advances church track
+            coinCost: 0,
+            resourceCost: { prisoners: 1 },
+            tracks: { church: 2 },
+            hasWinner: false,
+            consumesResources: true, // Prisoner consumed
+            coinReward: 3,
+            nonParticipantPenalty: { church: -1 },
+            description: "Religious execution by crucifixion"
+        }
+    },
+
+    // Act Display Configuration
+    actDisplay: {
+        regularActsPerRound: 5, // 5 regular acts displayed per round
+        totalRegularActs: 15, // Total pool of regular acts
+        executionActsAlwaysAvailable: true, // All 3 execution acts always shown
+        // Regular acts not bid on stay, selected ones replaced in cleanup
+        // Execution acts always stay (never replaced)
+        // Non-participant penalty: Applied once per round if player didn't participate in ANY selected act
+    },
+
+    // Event Cards - Drawn at start of each round (before phases begin)
+    // Structure: id, name, description, effects
+    // Effects can include: trackBlocked, locationDisabled, marketModify, playerCost, playerGain, 
+    // trackModify, drawAnotherEvent, marketPriceModify, workerCostModify
+    // Note: Terminology mapping - "Citizen track" = population, "Clergy track" = church, 
+    // "Town Square" = forum, "Pantheon" = temple, "Sestertius" = coins
+    // Balanced: 6 negative, 6 positive, 3 strategic/neutral
+    eventCards: {
+        plague_strikes: {
+            id: "plague_strikes",
+            name: "The Plague Strikes",
+            description: "A terrible disease sweeps through the land. The citizens are confined to their homes.",
+            effects: {
+                trackBlocked: ["population"], // Population track cannot be moved this round
+                locationDisabled: ["forum"] // Forum (Town Square) action does nothing this round
+            }
+        },
+        new_lands_discovered: {
+            id: "new_lands_discovered",
+            name: "New Lands Discovered",
+            description: "An expedition to the east has returned, bringing all sorts of exotic creatures to be pitted against each other.",
+            effects: {
+                marketModify: {
+                    animals: 3 // Add 3 animals to the market
+                }
+            }
+        },
+        animals_escape: {
+            id: "animals_escape",
+            name: "Animals Escape",
+            description: "There is a breakout from the animal pens and lions are loose on the streets. They must be killed.",
+            effects: {
+                marketModify: {
+                    animals: -3 // Remove 3 animals from the market
+                }
+            }
+        },
+        traveling_troop: {
+            id: "traveling_troop",
+            name: "Traveling Troop",
+            description: "A group of performers from Greece are passing through Rome and decided to stay.",
+            effects: {
+                marketModify: {
+                    mummers: 3 // Add 3 mummers to the market
+                }
+            }
+        },
+        new_age: {
+            id: "new_age",
+            name: "New Age",
+            description: "The season turns from one to another and a new era in the city has begun.",
+            effects: {
+                drawAnotherEvent: true // Shuffle discard pile into event deck, then draw another event card
+            }
+        },
+        caesar_leaves_for_war: {
+            id: "caesar_leaves_for_war",
+            name: "Caesar Leaves for War",
+            description: "Duty calls and the Caesar is needed elsewhere. Rome grows quiet without the legion.",
+            effects: {
+                trackBlocked: ["empire"], // Empire track cannot be moved this round
+                locationDisabled: ["palace"] // Palace action does nothing this round
+            }
+        },
+        pirates_grow_brave: {
+            id: "pirates_grow_brave",
+            name: "Pirates Grow Brave",
+            description: "The empire needs money for new ships, so taxes must be raised.",
+            effects: {
+                playerCost: {
+                    coins: 5, // Each player pays 5 coins
+                    alternative: { // If player has no coins
+                        resourceLoss: 1 // They lose 1 resource of their choice
+                    }
+                }
+            }
+        },
+        slaves_revolt: {
+            id: "slaves_revolt",
+            name: "Slaves Revolt",
+            description: "The slaves rise up in rebellion but are quickly forced into submission. Their leaders are executed.",
+            effects: {
+                marketModify: {
+                    slaves: -3 // Remove 3 slaves from the market (placed in supply)
+                }
+            }
+        },
+        jupiter_is_angry: {
+            id: "jupiter_is_angry",
+            name: "Jupiter is Angry",
+            description: "A goat's entrails reveal Jupiter is not pleased with our worship. We must appease him.",
+            effects: {
+                trackBlocked: ["church"], // Church (Clergy) track cannot be moved this round
+                locationDisabled: ["temple"] // Temple (Pantheon) action does nothing this round
+            }
+        },
+        
+        // NEW POSITIVE EVENTS
+        slave_ship_arrives: {
+            id: "slave_ship_arrives",
+            name: "Slave Ship Arrives",
+            description: "A merchant ship arrives from the east, bringing a fresh supply of slaves to the market.",
+            effects: {
+                marketModify: {
+                    slaves: 3 // Add 3 slaves to the market
+                }
+            }
+        },
+        victory_celebration: {
+            id: "victory_celebration",
+            name: "Victory Celebration",
+            description: "The empire celebrates a great military victory. The people rejoice and coins flow freely.",
+            effects: {
+                playerGain: {
+                    coins: 2 // All players gain 2 coins
+                },
+                trackModify: {
+                    empire: 1 // All players gain +1 Empire track
+                }
+            }
+        },
+        festival_declared: {
+            id: "festival_declared",
+            name: "Festival Declared",
+            description: "The emperor declares a grand festival. The streets fill with celebration and performers.",
+            effects: {
+                playerGain: {
+                    coins: 1 // All players gain 1 coin
+                },
+                trackModify: {
+                    population: 1 // All players gain +1 Population track
+                },
+                marketModify: {
+                    mummers: 2 // Add 2 mummers to the market
+                }
+            }
+        },
+        imperial_bounty: {
+            id: "imperial_bounty",
+            name: "Imperial Bounty",
+            description: "The emperor rewards loyal citizens. Those in favor receive generous payments.",
+            effects: {
+                playerGain: {
+                    coins: "trackBased" // Each player gains coins equal to their Empire track position (min 1)
+                }
+            }
+        },
+        religious_offering: {
+            id: "religious_offering",
+            name: "Religious Offering",
+            description: "A great religious ceremony brings the faithful together. The church gains favor.",
+            effects: {
+                trackModify: {
+                    church: 1 // All players gain +1 Church track
+                },
+                marketModify: {
+                    mummers: 2 // Add 2 mummers to the market
+                }
+            }
+        },
+        economic_boom: {
+            id: "economic_boom",
+            name: "Economic Boom",
+            description: "Trade flourishes and the markets overflow with goods. Everyone prospers.",
+            effects: {
+                marketModify: {
+                    mummers: 2, // Add 2 to each market
+                    animals: 2,
+                    slaves: 2
+                },
+                playerGain: {
+                    coins: 1 // All players gain 1 coin
+                }
+            }
+        },
+        
+        // NEW STRATEGIC/NEUTRAL EVENTS
+        market_crash: {
+            id: "market_crash",
+            name: "Market Crash",
+            description: "Oversupply causes prices to plummet. Resources are cheaper this round.",
+            effects: {
+                marketPriceModify: -1 // All market prices reduced by 1 this round (minimum 1)
+            }
+        },
+        labor_shortage: {
+            id: "labor_shortage",
+            name: "Labor Shortage",
+            description: "Workers are in high demand. It costs more to deploy them this round.",
+            effects: {
+                workerCostModify: 1 // Workers cost +1 coin to deploy this round
+            }
         }
     },
 
@@ -223,7 +635,7 @@ export const CONFIG = {
     winConditions: {
         trackVictory: {
             type: "track",
-            threshold: 20, // Reach this on any track to win
+            threshold: 15, // Reach this on any track to win
             description: "Reach threshold on any victory track"
         },
         roundLimit: {
@@ -241,7 +653,8 @@ export const CONFIG = {
     limits: {
         maxWorkersPerLocation: 1, // One worker per location per player (except prison)
         maxBidPerAct: null, // No maximum bid
-        minBid: 1 // Minimum bid is 1 coin
+        minBid: 1, // Minimum bid is 1 coin
+        workerDeployCost: 1 // Cost in coins to deploy a worker (paid during placeWorkers phase)
     },
 
     // Bidding Rules

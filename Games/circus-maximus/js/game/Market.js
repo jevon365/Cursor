@@ -150,28 +150,67 @@ export class MarketManager {
     /**
      * Buy a resource from a market
      */
-    buyResource(resourceType, player) {
+    buyResource(resourceType, player, priceModifier = 0) {
         const market = this.getMarket(resourceType);
         if (!market) {
-            return { success: false, reason: 'Invalid market' };
+            return { success: false, error: 'Invalid market' };
         }
         
-        const price = market.getCurrentPrice();
-        if (price === null) {
-            return { success: false, reason: 'No resources available' };
+        const basePrice = market.getCurrentPrice();
+        if (basePrice === null) {
+            return { success: false, error: 'No resources available' };
         }
         
-        if (!player.hasResource('coins', price)) {
-            return { success: false, reason: 'Insufficient coins' };
+        const finalPrice = Math.max(1, basePrice + priceModifier);
+        
+        if (!player.hasResource('coins', finalPrice)) {
+            return { success: false, error: 'Insufficient coins' };
         }
         
         // Deduct coins and add resource
-        player.removeResource('coins', price);
+        player.removeResource('coins', finalPrice);
         player.addResource(resourceType, 1);
         
         market.buyResource();
         
-        return { success: true, price: price };
+        return { success: true, price: finalPrice };
+    }
+
+    /**
+     * Add resources to a market (from events)
+     */
+    addResources(resourceType, amount) {
+        const market = this.getMarket(resourceType);
+        if (!market) {
+            return;
+        }
+        
+        for (let i = 0; i < amount; i++) {
+            const position = market.supply.length;
+            market.supply.push({
+                price: market.getPriceForPosition(position),
+                available: true
+            });
+        }
+    }
+
+    /**
+     * Remove resources from a market (from events)
+     */
+    removeResources(resourceType, amount) {
+        const market = this.getMarket(resourceType);
+        if (!market) {
+            return;
+        }
+        
+        let removed = 0;
+        // Remove from rightmost (most expensive) first
+        for (let i = market.supply.length - 1; i >= 0 && removed < amount; i--) {
+            if (market.supply[i].available) {
+                market.supply.splice(i, 1);
+                removed++;
+            }
+        }
     }
 
     /**

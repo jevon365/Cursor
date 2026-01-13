@@ -118,6 +118,13 @@ export class Player {
     }
 
     /**
+     * Modify a victory track (alias for updateTrack)
+     */
+    modifyTrack(trackName, amount) {
+        return this.updateTrack(trackName, amount);
+    }
+
+    /**
      * Get track value
      */
     getTrack(trackName) {
