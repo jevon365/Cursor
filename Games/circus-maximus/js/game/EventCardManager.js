@@ -55,6 +55,25 @@ export class EventCardManager {
     }
 
     /**
+     * Peek at the top event card without drawing it (for Oracle)
+     * @returns {object|null} The top event card or null if deck is empty
+     */
+    peekTopEvent() {
+        // If deck is empty, check discard
+        if (this.deck.length === 0) {
+            if (this.discard.length > 0) {
+                // Return a copy of what would be drawn (first card after shuffle)
+                // Since we can't know the shuffle order, return null or first discard
+                return this.discard.length > 0 ? { ...this.discard[0] } : null;
+            }
+            return null;
+        }
+
+        // Return a copy of the top card without removing it
+        return this.deck.length > 0 ? { ...this.deck[0] } : null;
+    }
+
+    /**
      * Resolve current event effects
      */
     resolveEvent(gameState, markets) {

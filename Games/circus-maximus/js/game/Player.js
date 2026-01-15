@@ -206,7 +206,9 @@ export class Player {
      */
     getSummary() {
         return {
+            id: this.id,
             name: this.name,
+            isAI: this.isAI,
             resources: { ...this.resources },
             workers: { ...this.workers },
             victoryTracks: { ...this.victoryTracks },

@@ -79,7 +79,13 @@ export class GameEngine {
             currentEvent: this.events.getCurrentEvent(),
             availableActs: this.acts.getAvailableActs(),
             blockedTracks: this.state.blockedTracks,
-            disabledLocations: this.state.disabledLocations
+            disabledLocations: this.state.disabledLocations,
+            workerCostModifier: this.state.workerCostModifier || 0,
+            marketPriceModifier: this.state.marketPriceModifier || 0,
+            resourceSupply: this.state.resourceSupply,
+            temporaryTrackMovements: this.state.temporaryTrackMovements,
+            marketQueues: this.state.marketQueues || {},
+            currentMarket: this.state.currentMarket
         };
     }
 
@@ -132,13 +138,16 @@ export class GameEngine {
                     const result = currentPlayer.placeBid(action.actId, action.coins);
                     if (result) {
                         this.acts.placeBid(currentPlayer.id, action.actId, action.coins);
+                        // Player has acted, remove from passed list if they were there
+                        this.state.unmarkPlayerPassed();
                     } else {
                         return { success: false, error: 'Insufficient coins' };
                     }
                 }
                 break;
             case 'pass':
-                // Pass action - no execution needed
+                // Mark player as passed
+                this.state.markPlayerPassed();
                 break;
             case 'placeWorker':
                 if (currentPhase === 'placeWorkers') {
@@ -154,18 +163,83 @@ export class GameEngine {
                     if (currentPlayer.workers.available <= 0) {
                         return { success: false, error: 'No available workers' };
                     }
-                    currentPlayer.removeResource('coins', workerCost);
-                    currentPlayer.placeWorker();
-                    this.board.placeWorker(currentPlayer.id, action.locationId);
+                    
+                    // Try to place worker on board
+                    const placeResult = this.board.placeWorker(action.locationId, currentPlayer.id);
+                    if (!placeResult.success) {
+                        return { success: false, error: placeResult.reason || 'Cannot place worker at this location' };
+                    }
+                    
+                    // Get location config
+                    const location = this.config.locations[action.locationId];
+                    if (!location) {
+                        return { success: false, error: 'Invalid location' };
+                    }
+                    
+                    // Handle location-specific effects BEFORE deducting cost
+                    // (Some effects like coin flips may refund cost)
+                    const effectResult = this.handleLocationEffect(action.locationId, location, currentPlayer);
+                    if (!effectResult.success) {
+                        // Effect failed - remove worker from board
+                        this.board.removeWorker(action.locationId, currentPlayer.id);
+                        return { success: false, error: effectResult.error || 'Location effect failed' };
+                    }
+                    
+                    // Handle worker death (coin flip tails)
+                    if (effectResult.workerDied) {
+                        // Worker died - remove from board, return to supply, don't deduct cost
+                        this.board.removeWorker(action.locationId, currentPlayer.id);
+                        // Worker already returned to supply in handleCoinFlipEffect
+                        // Don't deduct cost, don't place worker
+                        // Space is now available again (worker removed from board)
+                    } else {
+                        // Normal success - deduct cost and place worker
+                        if (effectResult.shouldDeductCost !== false) {
+                            currentPlayer.removeResource('coins', workerCost);
+                        }
+                        if (effectResult.shouldPlaceWorker !== false) {
+                            currentPlayer.placeWorker();
+                        }
+                    }
+                    
+                    // Track market queues for market locations
+                    if (location.type === 'market' && location.marketType) {
+                        // Ensure queue exists
+                        if (!this.state.marketQueues[location.marketType]) {
+                            this.state.marketQueues[location.marketType] = [];
+                        }
+                        const queue = this.state.marketQueues[location.marketType];
+                        // Only add if not already in queue (avoid duplicates)
+                        if (!queue.includes(currentPlayer.id)) {
+                            queue.push(currentPlayer.id);
+                            console.log(`Player ${currentPlayer.id} (${currentPlayer.name}) added to ${location.marketType} market queue`);
+                        }
+                    }
+                    
+                    // Player has acted, remove from passed list if they were there
+                    this.state.unmarkPlayerPassed();
                 }
                 break;
             case 'buyResource':
                 if (currentPhase === 'buyResources') {
+                    // Safety check: Ensure this is the current market being resolved
+                    if (this.state.currentMarket !== action.resourceType) {
+                        return { success: false, error: `You can only buy from ${this.state.currentMarket || 'the current'} market right now. Markets are resolved one at a time.` };
+                    }
+                    
+                    // Safety check: Ensure player has worker in market (validation should catch this, but add safety check)
+                    const marketQueue = this.state.marketQueues[action.resourceType];
+                    if (!marketQueue || !marketQueue.includes(currentPlayer.id)) {
+                        return { success: false, error: `You must have a worker in ${action.resourceType} market to buy this resource` };
+                    }
+                    
                     const priceModifier = this.state.marketPriceModifier || 0;
                     const result = this.markets.buyResource(action.resourceType, currentPlayer, priceModifier);
                     if (!result.success) {
                         return { success: false, error: result.error || 'Cannot buy resource' };
                     }
+                    // Player has acted, remove from passed list if they were there
+                    this.state.unmarkPlayerPassed();
                 }
                 break;
             default:
@@ -241,8 +315,93 @@ export class GameEngine {
             }
         }
 
-        // Move to next player
-        this.state.nextPlayer();
+        // Special handling for Buy Resources phase - markets resolved sequentially
+        if (this.state.currentPhase === 'buyResources' && this.state.currentMarket) {
+            // Check if all players in current market have passed
+            const currentMarketQueue = this.state.marketQueues[this.state.currentMarket] || [];
+            const allPassedInMarket = currentMarketQueue.every(playerId => {
+                const playerIndex = this.state.players.findIndex(p => p.id === playerId);
+                return playerIndex >= 0 && this.state.hasPlayerPassed(playerIndex);
+            });
+            
+            if (allPassedInMarket) {
+                // Move to next market
+                const marketOrder = ['mummers', 'animals', 'slaves'];
+                const currentMarketIndex = marketOrder.indexOf(this.state.currentMarket);
+                let nextMarket = null;
+                
+                // Find next market with players in queue
+                for (let i = currentMarketIndex + 1; i < marketOrder.length; i++) {
+                    const marketType = marketOrder[i];
+                    if (this.state.marketQueues[marketType] && this.state.marketQueues[marketType].length > 0) {
+                        nextMarket = marketType;
+                        break;
+                    }
+                }
+                
+                if (nextMarket) {
+                    // Move to next market
+                    this.state.currentMarket = nextMarket;
+                    this.state.clearPassedPlayers(); // Clear passed players for new market
+                    this.phases.setTurnOrder(this.state, 'market');
+                    // Set current player to first in new market's queue
+                    const newTurnOrder = this.state.turnOrder || [];
+                    if (newTurnOrder.length > 0) {
+                        this.state.currentPlayerIndex = newTurnOrder[0];
+                    }
+                    this.state.turn++;
+                    return;
+                } else {
+                    // No more markets - phase should end
+                    // This will be handled by shouldEndPhase check
+                }
+            }
+        }
+        
+        // Move to next non-passed player in turn order
+        // Skip players who have already passed
+        const turnOrder = this.state.turnOrder || this.state.players.map((_, idx) => idx);
+        const currentIndexInOrder = turnOrder.indexOf(this.state.currentPlayerIndex);
+        
+        // Find next non-passed player
+        let nextPlayerIndex = null;
+        for (let i = 1; i < turnOrder.length; i++) {
+            const nextIndex = turnOrder[(currentIndexInOrder + i) % turnOrder.length];
+            if (!this.state.hasPlayerPassed(nextIndex)) {
+                nextPlayerIndex = nextIndex;
+                break;
+            }
+        }
+        
+        // Clear temporary track movements for the previous player (currentPlayerIndex before change)
+        // Rulebook says track movements are "for this turn only"
+        const previousPlayerIndex = this.state.currentPlayerIndex;
+        if (this.state.temporaryTrackMovements[previousPlayerIndex]) {
+            delete this.state.temporaryTrackMovements[previousPlayerIndex];
+        }
+        
+        if (nextPlayerIndex !== null) {
+            // Found a non-passed player, move to them
+            this.state.currentPlayerIndex = nextPlayerIndex;
+            this.state.turn++;
+        } else {
+            // All players have passed - phase should have ended, but if we get here,
+            // force phase end check again as safety
+            if (this.phases.shouldEndPhase(this.state)) {
+                // Phase should end - this shouldn't happen but handle it
+                const currentPhaseId = this.state.currentPhase;
+                this.phases.onPhaseEnd(this.state);
+                if (this.phases.nextPhase()) {
+                    const nextPhase = this.phases.getCurrentPhase();
+                    this.state.setPhase(nextPhase.id);
+                    this.phases.onPhaseStart(this.state);
+                }
+            } else {
+                // Edge case: all passed but phase shouldn't end (shouldn't happen)
+                // Just increment turn to prevent infinite loop
+                this.state.turn++;
+            }
+        }
     }
 
     /**
@@ -292,5 +451,258 @@ export class GameEngine {
         this.phases = new Phases(this.config);
         this.state.board = this.board;
         this.initialized = false;
+    }
+
+    /**
+     * Handle location-specific effects when a worker is placed
+     * @param {string} locationId - ID of the location
+     * @param {object} location - Location config object
+     * @param {Player} player - Player placing the worker
+     * @returns {object} { success: boolean, error?: string, shouldDeductCost?: boolean, shouldPlaceWorker?: boolean }
+     */
+    handleLocationEffect(locationId, location, player) {
+        if (!location.effectType) {
+            // No effect - default behavior
+            return { success: true, shouldDeductCost: true, shouldPlaceWorker: true };
+        }
+
+        switch (location.effectType) {
+            case 'gainResource':
+                // Prison: Gain 1 prisoner from supply
+                return this.handleGainResourceEffect(location, player);
+            
+            case 'coinFlip':
+                // Port, War, Forest: Coin flip for resources or worker death
+                return this.handleCoinFlipEffect(location, player);
+            
+            case 'trackMovement':
+                // Town Square, Palace, Pantheon: Move track up
+                return this.handleTrackMovementEffect(location, player);
+            
+            case 'resourceConversion':
+                // Guildhall: Slave + coins = worker
+                return this.handleResourceConversionEffect(location, player);
+            
+            case 'information':
+                // Oracle: Animal = peek event deck
+                return this.handleInformationEffect(location, player);
+            
+            case 'market':
+                // Market locations: Just track queue, no immediate effect
+                return { success: true, shouldDeductCost: true, shouldPlaceWorker: true };
+            
+            case 'betting':
+                // Gamblers Den: Not implemented
+                return { success: false, error: 'Gamblers Den not yet implemented' };
+            
+            default:
+                // Unknown effect type - default behavior
+                return { success: true, shouldDeductCost: true, shouldPlaceWorker: true };
+        }
+    }
+
+    /**
+     * Handle gainResource location effect (Prison)
+     */
+    handleGainResourceEffect(location, player) {
+        if (!location.resourceGain) {
+            return { success: false, error: 'Location missing resourceGain config' };
+        }
+
+        // Gain resources from supply
+        for (const [resourceType, amount] of Object.entries(location.resourceGain)) {
+            const taken = this.state.takeFromSupply(resourceType, amount);
+            if (taken > 0) {
+                player.addResource(resourceType, taken);
+            } else {
+                // Supply empty - but Prison can still be used (may have unlimited supply)
+                // For now, allow it but don't give resources
+                // TODO: Check rulebook - is Prison supply unlimited?
+            }
+        }
+
+        return { success: true, shouldDeductCost: true, shouldPlaceWorker: true };
+    }
+
+    /**
+     * Handle coinFlip location effect (Port, War, Forest)
+     * Returns early if tails (worker dies) - cost not deducted, worker returned
+     */
+    handleCoinFlipEffect(location, player) {
+        // Flip coin (true = heads, false = tails)
+        const isHeads = this.flipCoin();
+
+        if (!isHeads) {
+            // Tails: Worker dies
+            // Return worker to supply, don't deduct cost, remove from board
+            this.state.returnWorkerToSupply();
+            // Note: Worker already placed on board, will be removed by caller
+            return { 
+                success: true, 
+                shouldDeductCost: false, 
+                shouldPlaceWorker: false,
+                workerDied: true 
+            };
+        }
+
+        // Heads: Success - gain resources
+        if (location.coinFlipReward) {
+            for (const [resourceType, amount] of Object.entries(location.coinFlipReward)) {
+                const taken = this.state.takeFromSupply(resourceType, amount);
+                if (taken > 0) {
+                    player.addResource(resourceType, taken);
+                }
+            }
+        }
+
+        return { success: true, shouldDeductCost: true, shouldPlaceWorker: true };
+    }
+
+    /**
+     * Handle trackMovement location effect (Town Square, Palace, Pantheon)
+     */
+    handleTrackMovementEffect(location, player) {
+        if (!location.trackMovement) {
+            return { success: false, error: 'Location missing trackMovement config' };
+        }
+
+        // Check if tracks are blocked
+        for (const track of Object.keys(location.trackMovement)) {
+            if (this.state.blockedTracks && this.state.blockedTracks.includes(track)) {
+                return { success: false, error: `${track} track is blocked this round` };
+            }
+        }
+
+        // Apply temporary track movements
+        if (!this.state.temporaryTrackMovements[player.id]) {
+            this.state.temporaryTrackMovements[player.id] = {};
+        }
+
+        for (const [track, amount] of Object.entries(location.trackMovement)) {
+            // Store temporary movement
+            this.state.temporaryTrackMovements[player.id][track] = 
+                (this.state.temporaryTrackMovements[player.id][track] || 0) + amount;
+            
+            // Also apply to actual track (temporary movements are additive)
+            const currentValue = player.getTrack(track);
+            const newValue = Math.min(
+                currentValue + amount,
+                this.config.victoryTracks[track].max
+            );
+            player.updateTrack(track, newValue - currentValue);
+        }
+
+        // Palace special: Check if player is now first on Empire track
+        if (location.setsFirstPlayer && location.trackMovement.empire) {
+            // Check if player is now first on Empire track
+            const playerEmpireTrack = player.getTrack('empire');
+            const isFirst = this.state.players.every(p => 
+                p.id === player.id || p.getTrack('empire') <= playerEmpireTrack
+            );
+            if (isFirst) {
+                // Player is first on Empire track - set flag to go first next round
+                this.state.palaceFirstPlayer = player.id;
+            }
+        }
+
+        return { success: true, shouldDeductCost: true, shouldPlaceWorker: true };
+    }
+
+    /**
+     * Handle resourceConversion location effect (Guildhall)
+     */
+    handleResourceConversionEffect(location, player) {
+        if (!location.conversionCost || !location.conversionReward) {
+            return { success: false, error: 'Location missing conversion config' };
+        }
+
+        // Validate player has required resources
+        for (const [resourceType, amount] of Object.entries(location.conversionCost)) {
+            if (resourceType === 'coins') {
+                if (player.getResource('coins') < amount) {
+                    return { success: false, error: `Insufficient ${resourceType}` };
+                }
+            } else {
+                if (player.getResource(resourceType) < amount) {
+                    return { success: false, error: `Insufficient ${resourceType}` };
+                }
+            }
+        }
+
+        // Check worker supply for Guildhall
+        if (location.conversionReward.workers) {
+            if (this.state.getSupplyAmount('workers') < location.conversionReward.workers) {
+                return { success: false, error: 'No workers available in supply' };
+            }
+        }
+
+        // Remove conversion costs
+        for (const [resourceType, amount] of Object.entries(location.conversionCost)) {
+            if (resourceType === 'coins') {
+                player.removeResource('coins', amount);
+            } else {
+                // Return resource to supply
+                player.removeResource(resourceType, amount);
+                this.state.addToSupply(resourceType, amount);
+            }
+        }
+
+        // Give conversion rewards
+        for (const [resourceType, amount] of Object.entries(location.conversionReward)) {
+            if (resourceType === 'workers') {
+                // Take worker from supply and add to player's available workers
+                if (this.state.takeWorkerFromSupply()) {
+                    player.workers.available += amount;
+                } else {
+                    return { success: false, error: 'Failed to get worker from supply' };
+                }
+            } else {
+                player.addResource(resourceType, amount);
+            }
+        }
+
+        return { success: true, shouldDeductCost: true, shouldPlaceWorker: true };
+    }
+
+    /**
+     * Handle information location effect (Oracle)
+     */
+    handleInformationEffect(location, player) {
+        if (!location.informationCost) {
+            return { success: false, error: 'Location missing informationCost config' };
+        }
+
+        // Validate player has required resources
+        for (const [resourceType, amount] of Object.entries(location.informationCost)) {
+            if (player.getResource(resourceType) < amount) {
+                return { success: false, error: `Insufficient ${resourceType}` };
+            }
+        }
+
+        // Remove cost (return to supply)
+        for (const [resourceType, amount] of Object.entries(location.informationCost)) {
+            player.removeResource(resourceType, amount);
+            this.state.addToSupply(resourceType, amount);
+        }
+
+        // Peek at top event card
+        const peekedEvent = this.events.peekTopEvent();
+        if (peekedEvent) {
+            // Store in state for UI to display
+            if (!this.state.oraclePeekedEvents) {
+                this.state.oraclePeekedEvents = {};
+            }
+            this.state.oraclePeekedEvents[player.id] = peekedEvent;
+        }
+
+        return { success: true, shouldDeductCost: true, shouldPlaceWorker: true };
+    }
+
+    /**
+     * Flip a coin (random true/false)
+     * @returns {boolean} True for heads, false for tails
+     */
+    flipCoin() {
+        return Math.random() >= 0.5;
     }
 }

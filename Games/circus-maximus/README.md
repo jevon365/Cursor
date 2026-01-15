@@ -139,24 +139,24 @@ circus-maximus/
 
 ### ⏳ Pending (Needs Rulebook Data)
 
-- **Act Cards**: Structure defined, but specific acts need to be created
+- **Act Cards**: ✅ All 15 regular acts + 3 execution acts defined in config.js
 - **Location Effects**: Locations defined but effects not implemented
-- **Phase End Conditions**: Logic for "all players passed" needs tracking
-- **Market Queue Order**: Queue tracking for buyResources phase
-- **Bid Order Tracking**: For performActs phase ordering
+- **Phase End Conditions**: ✅ Fixed - tracks passed players, ends when all pass
+- **Market Queue Order**: Queue tracking for buyResources phase (placeholder)
+- **Bid Order Tracking**: For performActs phase ordering (placeholder)
 - **Final Act Selection**: One of three execution acts per round
 - **Success/Failure Mechanics**: Random outcomes for worker actions
 
 ### 📋 TODO
 
-1. **Extract act cards from rulebook** - Create all act card definitions
+1. ~~**Extract act cards from rulebook**~~ - ✅ Done - All acts in config.js
 2. **Implement location effects** - What happens when workers are placed
-3. **Complete phase end logic** - Track passed players properly
-4. **Implement act resolution** - Award coins, move tracks, handle winners
+3. ~~**Complete phase end logic**~~ - ✅ Done - Passed player tracking implemented
+4. ~~**Implement act resolution**~~ - ✅ Done - ActCardManager.resolveAct() handles all rewards
 5. **Add final act selection** - Randomly select one execution act per round
 6. **Implement worker action outcomes** - Success/failure mechanics
 7. **Complete AI strategy** - Decision-making for all phases
-8. **UI Integration** - Connect UI to game engine actions
+8. **UI Integration** - Connect UI to game engine actions (build interactive buttons/forms)
 
 ---
 
@@ -239,10 +239,35 @@ p.workers.placed = 0; // Then reset
 
 ## Testing the Game
 
-1. Open `index.html` in browser
-2. Game framework loads but mechanics need rulebook data
-3. UI displays but actions won't work until fully implemented
-4. Check browser console for errors
+### Local Development (Your Computer)
+
+**⚠️ IMPORTANT: You cannot open `index.html` directly** - ES6 modules require a web server.
+
+**Easiest Options (pick one):**
+
+1. **VS Code Live Server** (Recommended - no installation needed)
+   - Install "Live Server" extension
+   - Right-click `index.html` → "Open with Live Server"
+
+2. **Double-click `start-server.bat`** (Windows)
+   - Tries Python, then Node.js automatically
+   - Opens browser automatically
+
+3. **Command Line:**
+   ```bash
+   python server.py    # If you have Python
+   # OR
+   node server.js      # If you have Node.js
+   ```
+   Then open: `http://localhost:8000/index.html`
+
+### Hosting on GitHub Pages
+
+**No server needed!** Just push your code and enable GitHub Pages in repository settings.
+
+1. Push code to GitHub
+2. Settings → Pages → Select branch
+3. Game is live at `https://yourusername.github.io/repo-name/`
 
 ---
 

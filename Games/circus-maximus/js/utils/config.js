@@ -13,8 +13,8 @@ export const CONFIG = {
         minPlayers: 2,
         maxPlayers: 4,
         startingResources: {
-            coins: 5, // Starting coins per player
-            workers: 3, // Starting workers per player
+            coins: 15, // Starting coins per player (updated from playtesting)
+            workers: 5, // Starting workers per player (updated from playtesting)
             mummers: 0,
             animals: 0,
             slaves: 0,
@@ -24,6 +24,14 @@ export const CONFIG = {
             empire: 3,
             population: 3,
             church: 3
+        },
+        // Resource Supply - separate from markets, resources come from here for some locations
+        resourceSupply: {
+            mummers: 50, // Starting supply of mummers (Port takes from here)
+            animals: 50, // Starting supply of animals (Forest takes from here)
+            slaves: 50, // Starting supply of slaves (War takes from here)
+            prisoners: 50, // Starting supply of prisoners (Prison takes from here)
+            workers: 20 // Starting supply of workers (Guildhall takes from here)
         }
     },
 
@@ -81,56 +89,113 @@ export const CONFIG = {
     },
 
     // Worker Placement Locations
-    // Note: Locations and effects subject to rulebook confirmation
+    // Based on official rulebook - all 11 locations
     locations: {
+        port: {
+            name: "Port",
+            maxWorkersPerPlayer: 1,
+            type: "action",
+            effectType: "coinFlip", // Port, War, Forest use coin flips
+            coinFlipReward: { mummers: 2 }, // Heads: gain 2 mummers from supply
+            coinFlipFailure: "workerDies", // Tails: worker dies
+            description: "Adventure to Greece in hope of finding mummers"
+        },
+        war: {
+            name: "War",
+            maxWorkersPerPlayer: 1,
+            type: "action",
+            effectType: "coinFlip",
+            coinFlipReward: { slaves: 2 }, // Heads: gain 2 slaves from supply
+            coinFlipFailure: "workerDies", // Tails: worker dies
+            description: "Join the legion to capture slaves for the circus"
+        },
+        gamblersDen: {
+            name: "Gamblers Den",
+            maxWorkersPerPlayer: 1,
+            type: "action",
+            effectType: "betting", // Not yet implemented
+            description: "Play the odds on upcoming circus acts"
+        },
         prison: {
             name: "Prison",
-            maxWorkersPerPlayer: null, // Unlimited until stock depleted
-            type: "stock", // Has a stock of prisoners
-            stock: 10, // Starting stock of prisoners
-            description: "Acquire prisoners for final execution acts"
+            maxWorkersTotal: 6, // Max 6 workers total (all players combined)
+            type: "action",
+            effectType: "gainResource", // Gain 1 prisoner from supply
+            resourceGain: { prisoners: 1 },
+            allowMultiplePerPlayer: true, // Can place multiple workers here per turn
+            description: "Retrieve prisoners for final execution acts"
         },
-        arena: {
-            name: "Arena",
+        mummersMarket: {
+            name: "Mummers Market",
+            maxWorkersPerPlayer: 1,
+            type: "market",
+            marketType: "mummers",
+            description: "Hold your place in line to buy mummers"
+        },
+        animalsMarket: {
+            name: "Animals Market",
+            maxWorkersPerPlayer: 1,
+            type: "market",
+            marketType: "animals",
+            description: "Hold your place in line to buy animals"
+        },
+        slavesMarket: {
+            name: "Slaves Market",
+            maxWorkersPerPlayer: 1,
+            type: "market",
+            marketType: "slaves",
+            description: "Hold your place in line to buy slaves"
+        },
+        forest: {
+            name: "Forest",
             maxWorkersPerPlayer: 1,
             type: "action",
-            description: "Train gladiators and prepare for combat acts"
+            effectType: "coinFlip",
+            coinFlipReward: { animals: 2 }, // Heads: gain 2 animals from supply
+            coinFlipFailure: "workerDies", // Tails: worker dies
+            description: "Capture wild beasts for the circus"
         },
-        temple: {
-            name: "Temple",
+        townSquare: {
+            name: "Town Square",
             maxWorkersPerPlayer: 1,
             type: "action",
-            description: "Gain favor with the church"
+            effectType: "trackMovement", // Move up 1 on Population track
+            trackMovement: { population: 1 },
+            description: "Talk to the citizens to gain favor"
         },
         palace: {
             name: "Palace",
             maxWorkersPerPlayer: 1,
             type: "action",
-            description: "Gain favor with the empire"
+            effectType: "trackMovement", // Move up 1 on Empire track
+            trackMovement: { empire: 1 },
+            setsFirstPlayer: true, // If first on Empire track, go first next round
+            description: "Speak to Caesar to gain favor with the empire"
         },
-        forum: {
-            name: "Forum",
+        pantheon: {
+            name: "Pantheon",
             maxWorkersPerPlayer: 1,
             type: "action",
-            description: "Gain favor with the population"
+            effectType: "trackMovement", // Move up 1 on Church track
+            trackMovement: { church: 1 },
+            description: "Talk to the gods to gain favor with the church"
         },
-        trainingGrounds: {
-            name: "Training Grounds",
+        guildhall: {
+            name: "Guildhall",
             maxWorkersPerPlayer: 1,
             type: "action",
-            description: "Train performers and gain resources"
+            effectType: "resourceConversion", // Return 1 slave + 5 coins = gain 1 worker
+            conversionCost: { slaves: 1, coins: 5 },
+            conversionReward: { workers: 1 },
+            description: "Free a slave with payment to gain a worker"
         },
-        slums: {
-            name: "Slums",
+        oracle: {
+            name: "Oracle",
             maxWorkersPerPlayer: 1,
             type: "action",
-            description: "Recruit workers from the common people"
-        },
-        barracks: {
-            name: "Barracks",
-            maxWorkersPerPlayer: 1,
-            type: "action",
-            description: "Recruit military personnel"
+            effectType: "information", // Return 1 animal = peek at event deck
+            informationCost: { animals: 1 },
+            description: "Learn the future by sacrificing an animal"
         }
     },
 

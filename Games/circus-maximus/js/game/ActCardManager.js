@@ -105,6 +105,14 @@ export class ActCardManager {
     }
 
     /**
+     * Get total coins bid on an act
+     */
+    getTotalBids(actId) {
+        const bids = this.getBids(actId);
+        return bids.reduce((total, bid) => total + bid.coins, 0);
+    }
+
+    /**
      * Get all selected acts (acts that received bids)
      */
     getSelectedActs() {

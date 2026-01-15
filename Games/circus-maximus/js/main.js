@@ -11,6 +11,8 @@ let gameEngine;
 let uiManager;
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing game...');
+    
     // Create game engine
     gameEngine = new GameEngine(CONFIG);
     
@@ -21,6 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
     window.gameEngine = gameEngine;
     window.uiManager = uiManager;
     
+    // Verify button exists
+    const startBtn = document.getElementById('start-game-btn');
+    if (startBtn) {
+        console.log('Start game button found');
+    } else {
+        console.error('Start game button NOT found!');
+    }
+    
     console.log('Circus Maximus game initialized');
-    console.log('Note: Game mechanics will be implemented after rulebook analysis');
 });

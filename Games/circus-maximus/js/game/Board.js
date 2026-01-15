@@ -33,14 +33,17 @@ export class Board {
         return this.spaces.filter(space => {
             const playerPlacements = this.workerPlacements[space.id]?.[playerId] || 0;
             
-            // Check if player has already placed max workers at this location
+            // Check max workers per player
             if (space.maxWorkersPerPlayer !== null && playerPlacements >= space.maxWorkersPerPlayer) {
                 return false;
             }
             
-            // Check if location has stock (for prison)
-            if (space.type === 'stock' && (!space.stock || space.stock <= 0)) {
-                return false;
+            // Check max workers total (for Prison - max 6 total)
+            if (space.maxWorkersTotal !== null) {
+                const totalWorkers = Object.values(this.workerPlacements[space.id] || {}).reduce((sum, count) => sum + count, 0);
+                if (totalWorkers >= space.maxWorkersTotal) {
+                    return false;
+                }
             }
             
             return true;
@@ -63,23 +66,31 @@ export class Board {
         
         const playerPlacements = this.workerPlacements[spaceId][playerId] || 0;
         
-        // Check max workers per player (except prison)
+        // Check max workers per player
         if (space.maxWorkersPerPlayer !== null && playerPlacements >= space.maxWorkersPerPlayer) {
             return { success: false, reason: 'Max workers already placed at this location' };
         }
         
-        // Check stock for stock-based locations (prison)
-        if (space.type === 'stock') {
-            if (!space.stock || space.stock <= 0) {
-                return { success: false, reason: 'Location stock depleted' };
+        // Check max workers total (for Prison - max 6 total)
+        if (space.maxWorkersTotal !== null) {
+            const totalWorkers = Object.values(this.workerPlacements[spaceId] || {}).reduce((sum, count) => sum + count, 0);
+            if (totalWorkers >= space.maxWorkersTotal) {
+                return { success: false, reason: 'Maximum workers reached at this location' };
             }
-            space.stock--;
         }
         
         // Place worker
         this.workerPlacements[spaceId][playerId] = (playerPlacements || 0) + 1;
         
-        return { success: true, stock: space.stock };
+        return { success: true };
+    }
+    
+    /**
+     * Get total workers on a space (all players)
+     */
+    getTotalWorkersOnSpace(spaceId) {
+        const placements = this.workerPlacements[spaceId] || {};
+        return Object.values(placements).reduce((sum, count) => sum + count, 0);
     }
 
     /**

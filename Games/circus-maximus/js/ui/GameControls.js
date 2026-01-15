@@ -14,9 +14,29 @@ export class GameControls {
      */
     setupEventListeners() {
         // Setup button
-        const startBtn = document.getElementById('start-game-btn');
-        if (startBtn) {
-            startBtn.addEventListener('click', () => this.handleStartGame());
+        const attachStartButton = () => {
+            const startBtn = document.getElementById('start-game-btn');
+            if (startBtn) {
+                startBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Start game button clicked');
+                    this.handleStartGame();
+                });
+                console.log('Start game button listener attached');
+                return true;
+            }
+            return false;
+        };
+        
+        // Try immediately
+        if (!attachStartButton()) {
+            // Retry after a short delay if DOM not ready
+            setTimeout(() => {
+                if (!attachStartButton()) {
+                    console.error('Failed to attach start game button listener');
+                }
+            }, 100);
         }
 
         // Player count selector
@@ -51,21 +71,43 @@ export class GameControls {
      * Handle start game button
      */
     handleStartGame() {
-        const playerCount = parseInt(document.getElementById('player-count').value);
-        const players = [];
-        
-        // Get player configurations
-        for (let i = 0; i < playerCount; i++) {
-            const playerTypeSelect = document.getElementById(`player-${i}-type`);
-            const playerNameInput = document.getElementById(`player-${i}-name`);
+        console.log('handleStartGame called');
+        try {
+            const playerCountSelect = document.getElementById('player-count');
+            if (!playerCountSelect) {
+                console.error('Player count select not found');
+                alert('Error: Could not find player count selector');
+                return;
+            }
             
-            const isAI = playerTypeSelect ? playerTypeSelect.value === 'ai' : false;
-            const name = playerNameInput ? playerNameInput.value || `Player ${i + 1}` : `Player ${i + 1}`;
+            const playerCount = parseInt(playerCountSelect.value);
+            console.log(`Starting game with ${playerCount} players`);
+            const players = [];
             
-            players.push({ name, isAI });
+            // Get player configurations
+            for (let i = 0; i < playerCount; i++) {
+                const playerTypeSelect = document.getElementById(`player-${i}-type`);
+                const playerNameInput = document.getElementById(`player-${i}-name`);
+                
+                const isAI = playerTypeSelect ? playerTypeSelect.value === 'ai' : false;
+                const name = playerNameInput ? playerNameInput.value || `Player ${i + 1}` : `Player ${i + 1}`;
+                
+                players.push({ name, isAI });
+                console.log(`Player ${i + 1}: ${name} (${isAI ? 'AI' : 'Human'})`);
+            }
+            
+            if (players.length === 0) {
+                console.error('No players configured');
+                alert('Error: No players configured');
+                return;
+            }
+            
+            console.log('Calling uiManager.startGame with players:', players);
+            this.uiManager.startGame(players);
+        } catch (error) {
+            console.error('Error in handleStartGame:', error);
+            alert('Error starting game: ' + error.message);
         }
-        
-        this.uiManager.startGame(players);
     }
 
     /**
