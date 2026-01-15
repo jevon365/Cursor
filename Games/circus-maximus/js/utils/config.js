@@ -696,6 +696,12 @@ export const CONFIG = {
         }
     },
 
+    // Economy Settings (feeding costs and income)
+    economy: {
+        feedingCostPerResource: 1, // Cost per resource (mummers, animals, slaves, prisoners)
+        minimumIncome: 3 // Minimum income floor to prevent death spiral
+    },
+
     // Win Conditions
     winConditions: {
         trackVictory: {

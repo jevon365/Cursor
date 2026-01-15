@@ -8,7 +8,7 @@ import { GameState } from './GameState.js';
 import { Board } from './Board.js';
 import { Player } from './Player.js';
 import { Phases } from './Phases.js';
-import { MarketManager } from './Market.js';
+import { SimpleMarket } from './Market.js';
 import { EventCardManager } from './EventCardManager.js';
 import { ActCardManager } from './ActCardManager.js';
 import { CONFIG } from '../utils/config.js';
@@ -19,7 +19,7 @@ export class GameEngine {
         this.state = new GameState(config);
         this.board = new Board(config);
         this.phases = new Phases(config);
-        this.markets = new MarketManager(config);
+        this.markets = new SimpleMarket();
         this.events = new EventCardManager(config);
         this.acts = new ActCardManager(config);
         this.state.board = this.board;
@@ -85,7 +85,9 @@ export class GameEngine {
             resourceSupply: this.state.resourceSupply,
             temporaryTrackMovements: this.state.temporaryTrackMovements,
             marketQueues: this.state.marketQueues || {},
-            currentMarket: this.state.currentMarket
+            currentMarket: this.state.currentMarket,
+            message: this.state.message,
+            messageHistory: this.state.messageHistory
         };
     }
 
@@ -140,6 +142,7 @@ export class GameEngine {
                         this.acts.placeBid(currentPlayer.id, action.actId, action.coins);
                         // Player has acted, remove from passed list if they were there
                         this.state.unmarkPlayerPassed();
+                        this.state.setMessage(`${currentPlayer.name} bid ${action.coins} coin(s) on ${action.actId}`);
                     } else {
                         return { success: false, error: 'Insufficient coins' };
                     }
@@ -148,6 +151,7 @@ export class GameEngine {
             case 'pass':
                 // Mark player as passed
                 this.state.markPlayerPassed();
+                this.state.setMessage(`${currentPlayer.name} passed`);
                 break;
             case 'placeWorker':
                 if (currentPhase === 'placeWorkers') {
@@ -212,8 +216,14 @@ export class GameEngine {
                         // Only add if not already in queue (avoid duplicates)
                         if (!queue.includes(currentPlayer.id)) {
                             queue.push(currentPlayer.id);
-                            console.log(`Player ${currentPlayer.id} (${currentPlayer.name}) added to ${location.marketType} market queue`);
                         }
+                    }
+                    
+                    // Set message based on what happened
+                    if (effectResult.workerDied) {
+                        this.state.setMessage(`${currentPlayer.name} sent worker to ${location.name} - worker died!`, 'warning');
+                    } else {
+                        this.state.setMessage(`${currentPlayer.name} placed worker at ${location.name}`);
                     }
                     
                     // Player has acted, remove from passed list if they were there
@@ -234,10 +244,11 @@ export class GameEngine {
                     }
                     
                     const priceModifier = this.state.marketPriceModifier || 0;
-                    const result = this.markets.buyResource(action.resourceType, currentPlayer, priceModifier);
+                    const result = this.markets.buy(action.resourceType, currentPlayer, priceModifier);
                     if (!result.success) {
                         return { success: false, error: result.error || 'Cannot buy resource' };
                     }
+                    this.state.setMessage(`${currentPlayer.name} bought ${action.resourceType} for ${result.price} coin(s)`);
                     // Player has acted, remove from passed list if they were there
                     this.state.unmarkPlayerPassed();
                 }
@@ -282,7 +293,7 @@ export class GameEngine {
             
             // Restock markets during cleanup phase (before phase end)
             if (currentPhaseId === 'cleanup') {
-                this.markets.restockAll(this.state.players.length);
+                this.markets.restock();
                 
                 // Clear event effects and draw new event for next round
                 const eventEffects = this.events.endRound();
@@ -449,6 +460,7 @@ export class GameEngine {
         this.state = new GameState(this.config);
         this.board = new Board(this.config);
         this.phases = new Phases(this.config);
+        this.markets = new SimpleMarket();
         this.state.board = this.board;
         this.initialized = false;
     }

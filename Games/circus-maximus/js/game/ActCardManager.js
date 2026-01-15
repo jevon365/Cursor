@@ -178,10 +178,11 @@ export class ActCardManager {
 
         // Determine winner if act has one
         let winner = null;
+        let diceResults = null;
         if (act.hasWinner && validParticipants.length > 1) {
-            // Random selection among participants
-            const randomIndex = Math.floor(Math.random() * validParticipants.length);
-            winner = validParticipants[randomIndex].player;
+            // Dice roll competition - no ties allowed
+            diceResults = this.rollDiceCompetition(validParticipants.map(p => p.player));
+            winner = diceResults.winner;
         } else if (act.hasWinner && validParticipants.length === 1) {
             winner = validParticipants[0].player;
         }
@@ -257,7 +258,59 @@ export class ActCardManager {
             success: true,
             act: act,
             winner: winner,
+            diceResults: diceResults,
             results: results
+        };
+    }
+
+    /**
+     * Roll dice competition between players - re-rolls on ties until clear winner
+     * @param {Player[]} players - Array of players competing
+     * @returns {object} { winner, rolls: [{player, roll}], rerollCount }
+     */
+    rollDiceCompetition(players) {
+        let rerollCount = 0;
+        const maxRerolls = 10; // Safety limit
+        
+        while (rerollCount < maxRerolls) {
+            // Roll d6 for each player
+            const rolls = players.map(player => ({
+                player,
+                roll: Math.floor(Math.random() * 6) + 1
+            }));
+            
+            // Sort by roll descending
+            rolls.sort((a, b) => b.roll - a.roll);
+            
+            // Check if highest roll is unique (no tie for first)
+            const highestRoll = rolls[0].roll;
+            const tiedForFirst = rolls.filter(r => r.roll === highestRoll);
+            
+            if (tiedForFirst.length === 1) {
+                // Clear winner
+                return {
+                    winner: rolls[0].player,
+                    rolls: rolls,
+                    rerollCount: rerollCount
+                };
+            }
+            
+            // Tie - re-roll only among tied players
+            players = tiedForFirst.map(r => r.player);
+            rerollCount++;
+        }
+        
+        // Fallback after max rerolls - pick randomly from remaining tied
+        const finalRolls = players.map(player => ({
+            player,
+            roll: Math.floor(Math.random() * 6) + 1
+        }));
+        finalRolls.sort((a, b) => b.roll - a.roll);
+        
+        return {
+            winner: finalRolls[0].player,
+            rolls: finalRolls,
+            rerollCount: rerollCount
         };
     }
 

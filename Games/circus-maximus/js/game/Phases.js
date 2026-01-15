@@ -323,6 +323,26 @@ export class Phases {
                 // Reset workers and bids
                 gameState.board.clearWorkers();
                 gameState.players.forEach(p => {
+                    // 1. Calculate feeding costs (1 coin per resource)
+                    const totalResources = (p.getResource('mummers') || 0) + 
+                                           (p.getResource('animals') || 0) + 
+                                           (p.getResource('slaves') || 0) + 
+                                           (p.getResource('prisoners') || 0);
+                    const feedingCost = totalResources * (this.config.economy?.feedingCostPerResource || 1);
+                    
+                    // 2. Calculate income (sum of tracks, minimum floor)
+                    const trackIncome = p.getTrack('empire') + p.getTrack('population') + p.getTrack('church');
+                    const minimumIncome = this.config.economy?.minimumIncome || 3;
+                    const income = Math.max(trackIncome, minimumIncome);
+                    
+                    // 3. Apply feeding cost and income
+                    const netChange = income - feedingCost;
+                    if (netChange >= 0) {
+                        p.addResource('coins', netChange);
+                    } else {
+                        p.removeResource('coins', Math.abs(netChange));
+                    }
+                    
                     // Return placed workers to available before resetting
                     p.workers.available += p.workers.placed;
                     p.workers.placed = 0;
@@ -335,6 +355,8 @@ export class Phases {
                     slaves: []
                 };
                 gameState.currentMarket = null;
+                // Increment round counter
+                gameState.round++;
                 break;
         }
     }

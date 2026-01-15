@@ -952,6 +952,55 @@ input[type="number"] {
     text-align: center;
 }
 
+/* Game Message Display */
+.game-message {
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    border-radius: var(--border-radius);
+    font-weight: var(--font-weight-semibold);
+    text-align: center;
+    animation: messageSlideIn 0.3s ease-out;
+}
+
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.game-message.message-info {
+    background-color: #e3f2fd;
+    border: 2px solid #2196f3;
+    color: #1565c0;
+}
+
+.game-message.message-success {
+    background-color: #e8f5e9;
+    border: 2px solid var(--color-success);
+    color: var(--color-success);
+}
+
+.game-message.message-warning {
+    background-color: #fff3e0;
+    border: 2px solid var(--color-warning);
+    color: #e65100;
+}
+
+.game-message.message-error {
+    background-color: #ffebee;
+    border: 2px solid var(--color-error);
+    color: var(--color-error);
+}
+
+.message-text {
+    display: inline-block;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     #app {

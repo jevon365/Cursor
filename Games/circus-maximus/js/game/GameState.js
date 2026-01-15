@@ -41,6 +41,33 @@ export class GameState {
         this.oraclePeekedEvents = {}; // playerId -> event card
         // Palace first player flag - player who used Palace and is first on Empire track
         this.palaceFirstPlayer = null; // playerId who should go first next round
+        
+        // Message system for UI feedback
+        this.message = '';
+        this.messageHistory = [];
+    }
+
+    /**
+     * Set current message and add to history
+     * @param {string} msg - Message to display
+     * @param {string} type - Message type: 'info', 'warning', 'success', 'error'
+     */
+    setMessage(msg, type = 'info') {
+        this.message = msg;
+        this.messageHistory.push({
+            msg,
+            type,
+            timestamp: Date.now(),
+            round: this.round,
+            phase: this.currentPhase
+        });
+    }
+
+    /**
+     * Clear current message (but keep history)
+     */
+    clearMessage() {
+        this.message = '';
     }
 
     /**
@@ -68,6 +95,8 @@ export class GameState {
         this.currentMarket = null;
         this.oraclePeekedEvents = {};
         this.palaceFirstPlayer = null;
+        this.message = '';
+        this.messageHistory = [];
         
         // Initialize player resources and tracks from config
         this.players.forEach(player => {
@@ -276,7 +305,9 @@ export class GameState {
             marketQueues: this.marketQueues,
             currentMarket: this.currentMarket,
             oraclePeekedEvents: this.oraclePeekedEvents || {},
-            palaceFirstPlayer: this.palaceFirstPlayer
+            palaceFirstPlayer: this.palaceFirstPlayer,
+            message: this.message,
+            messageHistory: this.messageHistory
         });
     }
 
@@ -308,6 +339,8 @@ export class GameState {
         this.currentMarket = state.currentMarket || null;
         this.oraclePeekedEvents = state.oraclePeekedEvents || {};
         this.palaceFirstPlayer = state.palaceFirstPlayer || null;
+        this.message = state.message || '';
+        this.messageHistory = state.messageHistory || [];
         
         // Reconstruct players
         this.players = state.players.map(pData => {

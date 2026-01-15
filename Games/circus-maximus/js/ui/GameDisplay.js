@@ -30,6 +30,9 @@ export class GameDisplay {
         // Game info bar
         this.renderGameInfo(state);
 
+        // Message display
+        this.renderMessage(state);
+
         // Selected acts display (acts chosen for this round)
         this.renderSelectedActs(state);
 
@@ -61,6 +64,25 @@ export class GameDisplay {
             </div>
         `;
         this.gamePlayContainer.appendChild(gameInfo);
+    }
+
+    /**
+     * Render current message from game state
+     */
+    renderMessage(state) {
+        if (!state.message) return;
+
+        const messageBar = document.createElement('div');
+        messageBar.className = 'game-message';
+        
+        // Get message type from history if available
+        const lastMessage = state.messageHistory?.[state.messageHistory.length - 1];
+        const messageType = lastMessage?.type || 'info';
+        
+        messageBar.classList.add(`message-${messageType}`);
+        messageBar.innerHTML = `<span class="message-text">${state.message}</span>`;
+        
+        this.gamePlayContainer.appendChild(messageBar);
     }
 
     /**
