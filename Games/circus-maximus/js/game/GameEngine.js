@@ -49,6 +49,9 @@ export class GameEngine {
         this.events.drawEvent();
         this.events.resolveEvent(this.state, this.markets);
         
+        // Announce event and mandatory execution act
+        this.announceRoundStart();
+        
         // Set initial phase
         const initialPhase = this.phases.getCurrentPhase();
         if (initialPhase) {
@@ -57,6 +60,26 @@ export class GameEngine {
         }
         
         this.initialized = true;
+    }
+
+    /**
+     * Announce event and mandatory execution act at round start
+     */
+    announceRoundStart() {
+        const event = this.events.getCurrentEvent();
+        const executionAct = this.acts.getMandatoryExecutionAct();
+        
+        let message = `Round ${this.state.round} begins! `;
+        
+        if (event) {
+            message += `Event: ${event.name}. `;
+        }
+        
+        if (executionAct) {
+            message += `Mandatory Execution: ${executionAct.name}.`;
+        }
+        
+        this.state.setMessage(message, 'info');
     }
 
     /**
@@ -77,6 +100,7 @@ export class GameEngine {
             },
             markets: this.markets.getAllStates(),
             currentEvent: this.events.getCurrentEvent(),
+            mandatoryExecutionAct: this.acts.getMandatoryExecutionAct(),
             availableActs: this.acts.getAvailableActs(),
             blockedTracks: this.state.blockedTracks,
             disabledLocations: this.state.disabledLocations,
@@ -87,7 +111,8 @@ export class GameEngine {
             marketQueues: this.state.marketQueues || {},
             currentMarket: this.state.currentMarket,
             message: this.state.message,
-            messageHistory: this.state.messageHistory
+            messageHistory: this.state.messageHistory,
+            lastActResults: this.state.lastActResults || []
         };
     }
 
@@ -284,11 +309,57 @@ export class GameEngine {
             
             // Handle phase-specific logic
             if (currentPhaseId === 'performActs') {
-                // Resolve all selected acts
+                // Resolve all selected acts and store results
                 const selectedActs = this.acts.getSelectedActs();
+                const resolutionResults = [];
+                
+                // Track which players participated in at least one act
+                const participatingPlayerIds = new Set();
+                
                 for (const act of selectedActs) {
-                    this.acts.resolveAct(act.id, this.state);
+                    const result = this.acts.resolveAct(act.id, this.state);
+                    if (result.success) {
+                        resolutionResults.push(result);
+                        
+                        // Track participants
+                        result.results.forEach(r => participatingPlayerIds.add(r.playerId));
+                        
+                        // Set message for winner
+                        if (result.winner) {
+                            const winnerName = result.winner.name || `Player ${result.winner.id}`;
+                            let msg = `${act.name}: ${winnerName} wins!`;
+                            if (result.diceResults) {
+                                const rollsStr = result.diceResults.rolls
+                                    .map(r => `${r.player.name || 'P' + r.player.id}: ${r.roll}`)
+                                    .join(', ');
+                                msg += ` (Rolls: ${rollsStr})`;
+                            }
+                            this.state.setMessage(msg, 'success');
+                        } else {
+                            this.state.setMessage(`${act.name} resolved - all participants rewarded`);
+                        }
+                    }
                 }
+                
+                // Apply non-participant penalties to players who didn't participate in ANY act
+                this.state.players.forEach(player => {
+                    if (!participatingPlayerIds.has(player.id)) {
+                        // Apply penalty from each selected act
+                        for (const act of selectedActs) {
+                            if (act.nonParticipantPenalty) {
+                                for (const [trackName, amount] of Object.entries(act.nonParticipantPenalty)) {
+                                    if (!this.state.blockedTracks || !this.state.blockedTracks.includes(trackName)) {
+                                        player.modifyTrack(trackName, amount);
+                                    }
+                                }
+                            }
+                        }
+                        this.state.setMessage(`${player.name} did not participate - penalties applied`, 'warning');
+                    }
+                });
+                
+                // Store results for UI display
+                this.state.lastActResults = resolutionResults;
             }
             
             // Restock markets during cleanup phase (before phase end)
@@ -306,6 +377,9 @@ export class GameEngine {
                 this.acts.setupRound();
                 this.events.drawEvent();
                 this.events.resolveEvent(this.state, this.markets);
+                
+                // Announce new round's event and execution act
+                this.announceRoundStart();
             }
             
             this.phases.onPhaseEnd(this.state);

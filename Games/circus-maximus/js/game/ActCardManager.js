@@ -9,6 +9,7 @@ export class ActCardManager {
         this.actPool = []; // All 15 regular acts
         this.selectedActs = []; // Acts that received bids
         this.bids = {}; // { actId: [{ playerId, coins }] }
+        this.mandatoryExecutionAct = null; // Randomly selected execution act for the round
         this.initializeActPool();
     }
 
@@ -35,7 +36,7 @@ export class ActCardManager {
     }
 
     /**
-     * Set up available acts for the round (5 regular + 3 execution)
+     * Set up available acts for the round (5 regular + 1 mandatory execution)
      */
     setupRound() {
         // Keep acts that weren't bid on
@@ -59,16 +60,26 @@ export class ActCardManager {
         this.availableActs = [...keptActs, ...newActs];
         this.selectedActs = [];
         this.bids = {};
+        
+        // Randomly select one mandatory execution act for the round
+        const executionActs = Object.values(this.config.finalActs);
+        const randomIndex = Math.floor(Math.random() * executionActs.length);
+        this.mandatoryExecutionAct = { ...executionActs[randomIndex] };
+    }
+    
+    /**
+     * Get the mandatory execution act for this round
+     */
+    getMandatoryExecutionAct() {
+        return this.mandatoryExecutionAct;
     }
 
     /**
-     * Get all available acts (regular + execution)
+     * Get all available acts (regular + mandatory execution)
      */
     getAvailableActs() {
-        const executionActs = Object.values(this.config.finalActs).map(act => ({
-            id: act.id,
-            ...act
-        }));
+        // Only show the mandatory execution act for this round
+        const executionActs = this.mandatoryExecutionAct ? [this.mandatoryExecutionAct] : [];
 
         return {
             regular: this.availableActs,
@@ -329,7 +340,8 @@ export class ActCardManager {
             availableActs: this.availableActs,
             actPool: this.actPool,
             selectedActs: this.selectedActs,
-            bids: this.bids
+            bids: this.bids,
+            mandatoryExecutionAct: this.mandatoryExecutionAct
         };
     }
 
@@ -341,5 +353,6 @@ export class ActCardManager {
         this.actPool = data.actPool || [];
         this.selectedActs = data.selectedActs || [];
         this.bids = data.bids || {};
+        this.mandatoryExecutionAct = data.mandatoryExecutionAct || null;
     }
 }

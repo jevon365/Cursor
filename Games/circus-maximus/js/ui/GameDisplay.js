@@ -33,6 +33,9 @@ export class GameDisplay {
         // Message display
         this.renderMessage(state);
 
+        // Round announcements (event + mandatory execution act)
+        this.renderRoundAnnouncements(state);
+
         // Selected acts display (acts chosen for this round)
         this.renderSelectedActs(state);
 
@@ -83,6 +86,56 @@ export class GameDisplay {
         messageBar.innerHTML = `<span class="message-text">${state.message}</span>`;
         
         this.gamePlayContainer.appendChild(messageBar);
+    }
+
+    /**
+     * Render round announcements (event and mandatory execution act)
+     */
+    renderRoundAnnouncements(state) {
+        const container = document.createElement('div');
+        container.className = 'round-announcements';
+        container.style.display = 'flex';
+        container.style.gap = '16px';
+        container.style.marginBottom = '16px';
+
+        // Current Event
+        if (state.currentEvent) {
+            const eventCard = document.createElement('div');
+            eventCard.className = 'announcement-card event-card';
+            eventCard.style.flex = '1';
+            eventCard.style.padding = '12px';
+            eventCard.style.borderRadius = '8px';
+            eventCard.style.backgroundColor = '#fff3e0';
+            eventCard.style.border = '2px solid #ff9800';
+            
+            eventCard.innerHTML = `
+                <div style="font-weight: bold; color: #e65100; margin-bottom: 4px;">📜 Event: ${state.currentEvent.name}</div>
+                <div style="font-size: 0.9em;">${state.currentEvent.description || ''}</div>
+            `;
+            container.appendChild(eventCard);
+        }
+
+        // Mandatory Execution Act
+        if (state.mandatoryExecutionAct) {
+            const execCard = document.createElement('div');
+            execCard.className = 'announcement-card execution-card';
+            execCard.style.flex = '1';
+            execCard.style.padding = '12px';
+            execCard.style.borderRadius = '8px';
+            execCard.style.backgroundColor = '#ffebee';
+            execCard.style.border = '2px solid #c62828';
+            
+            execCard.innerHTML = `
+                <div style="font-weight: bold; color: #c62828; margin-bottom: 4px;">⚔️ Mandatory Execution: ${state.mandatoryExecutionAct.name}</div>
+                <div style="font-size: 0.9em;">${state.mandatoryExecutionAct.description || ''}</div>
+                <div style="font-size: 0.85em; margin-top: 4px; color: #666;">Requires: ${state.mandatoryExecutionAct.resourceCost?.prisoners || 1} prisoner(s)</div>
+            `;
+            container.appendChild(execCard);
+        }
+
+        if (state.currentEvent || state.mandatoryExecutionAct) {
+            this.gamePlayContainer.appendChild(container);
+        }
     }
 
     /**
@@ -302,7 +355,7 @@ export class GameDisplay {
                 phaseContent.appendChild(this.renderMarkets(state));
                 break;
             case 'performActs':
-                phaseContent.innerHTML = '<div class="auto-phase-message">Resolving acts...</div>';
+                phaseContent.appendChild(this.renderActResults(state));
                 break;
             case 'cleanup':
                 phaseContent.innerHTML = '<div class="auto-phase-message">Cleaning up...</div>';
@@ -677,13 +730,13 @@ export class GameDisplay {
                 marketSection.appendChild(queueInfo);
             }
 
-            // Get market state from game engine
-            const marketInstance = this.gameEngine.markets?.markets?.[resourceType];
-            if (marketInstance) {
-                const supply = marketInstance.supply || [];
-                const availableResources = supply.filter(r => r.available);
+            // Get market state from game engine (SimpleMarket uses .markets directly)
+            const simpleMarket = this.gameEngine.markets;
+            const marketPrices = simpleMarket?.markets?.[resourceType];
+            if (marketPrices && marketPrices.length > 0) {
+                const availableCount = marketPrices.length;
 
-                if (availableResources.length === 0) {
+                if (availableCount === 0) {
                     const noResources = document.createElement('p');
                     noResources.textContent = 'No resources available';
                     marketSection.appendChild(noResources);
@@ -703,8 +756,7 @@ export class GameDisplay {
                         resourceDiv.classList.add('selected');
                     }
                     
-                    const currentPrice = marketInstance.getCurrentPrice();
-                    const availableCount = availableResources.length;
+                    const currentPrice = simpleMarket.getPrice(resourceType);
                     
                     let statusText = '';
                     if (!isCurrentMarket && state.currentMarket) {
@@ -744,12 +796,87 @@ export class GameDisplay {
                     marketSection.appendChild(resourceDiv);
                 }
             } else {
-                const errorMsg = document.createElement('p');
-                errorMsg.textContent = 'Market not available';
-                marketSection.appendChild(errorMsg);
+                const noResources = document.createElement('p');
+                noResources.textContent = 'No resources available';
+                marketSection.appendChild(noResources);
             }
 
             container.appendChild(marketSection);
+        });
+
+        return container;
+    }
+
+    /**
+     * Render act resolution results
+     */
+    renderActResults(state) {
+        const container = document.createElement('div');
+        container.className = 'act-results-container';
+
+        const title = document.createElement('h3');
+        title.textContent = 'Act Resolution Results';
+        title.style.marginBottom = '16px';
+        container.appendChild(title);
+
+        const results = state.lastActResults || [];
+        
+        if (results.length === 0) {
+            container.innerHTML += '<div class="auto-phase-message">Resolving acts...</div>';
+            return container;
+        }
+
+        results.forEach(result => {
+            const resultCard = document.createElement('div');
+            resultCard.className = 'act-result-card';
+            resultCard.style.marginBottom = '16px';
+            resultCard.style.padding = '16px';
+            resultCard.style.border = '2px solid #ccc';
+            resultCard.style.borderRadius = '8px';
+            resultCard.style.backgroundColor = '#f9f9f9';
+
+            let html = `<h4 style="margin: 0 0 12px 0;">${result.act?.name || 'Unknown Act'}</h4>`;
+            
+            // Show winner if there is one
+            if (result.winner) {
+                html += `<div class="act-winner" style="color: #228B22; font-weight: bold; margin-bottom: 8px;">
+                    🏆 Winner: ${result.winner.name || 'Player ' + result.winner.id}
+                </div>`;
+                
+                // Show dice rolls
+                if (result.diceResults) {
+                    html += '<div class="dice-rolls" style="margin-bottom: 8px;"><strong>Dice Rolls:</strong><ul style="margin: 4px 0; padding-left: 20px;">';
+                    result.diceResults.rolls.forEach(roll => {
+                        const isWinner = roll.player.id === result.winner.id;
+                        html += `<li style="${isWinner ? 'font-weight: bold; color: #228B22;' : ''}">${roll.player.name || 'Player ' + roll.player.id}: ${roll.roll} ${isWinner ? '(Winner!)' : ''}</li>`;
+                    });
+                    html += '</ul></div>';
+                    
+                    if (result.diceResults.rerollCount > 0) {
+                        html += `<div style="font-size: 0.9em; color: #666;">Ties re-rolled ${result.diceResults.rerollCount} time(s)</div>`;
+                    }
+                }
+            } else {
+                html += '<div style="margin-bottom: 8px;"><em>All participants rewarded equally</em></div>';
+            }
+
+            // Show all participants and their rewards
+            if (result.results && result.results.length > 0) {
+                html += '<div class="participants"><strong>Participants:</strong><ul style="margin: 4px 0; padding-left: 20px;">';
+                result.results.forEach(r => {
+                    const player = state.players.find(p => p.id === r.playerId);
+                    const playerName = player?.name || 'Player ' + r.playerId;
+                    html += `<li>${playerName}: +${r.coinsGained} coins`;
+                    if (r.tracksMoved && Object.keys(r.tracksMoved).length > 0) {
+                        html += `, ${this.formatTrackRewards(r.tracksMoved)}`;
+                    }
+                    html += '</li>';
+                });
+                html += '</ul></div>';
+            }
+
+            resultCard.innerHTML = html;
+            container.appendChild(resultCard);
         });
 
         return container;
@@ -822,8 +949,7 @@ export class GameDisplay {
                             (state.currentPlayer.resources.coins || 0) > 0;
                 
                 if (this.selectedResourceType && this.selectedResourceType === currentMarket) {
-                    const marketInstance = this.gameEngine.markets?.markets?.[this.selectedResourceType];
-                    const currentPrice = marketInstance?.getCurrentPrice() || 0;
+                    const currentPrice = this.gameEngine.markets?.getPrice(this.selectedResourceType) || 0;
                     button.textContent = `Buy ${this.selectedResourceType} (${currentPrice} coins)`;
                 } else if (!currentMarket) {
                     button.textContent = 'Buy Resource (No market active)';
