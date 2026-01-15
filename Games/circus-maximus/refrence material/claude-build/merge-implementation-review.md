@@ -218,6 +218,65 @@ renderMessage(state) {
 
 ---
 
+## Additional Fixes (Post-Batch)
+
+### Fix 1: Markets Displaying Empty
+**Problem:** UI was using old market structure (`markets.markets[type].supply`)
+**Solution:** Updated `GameDisplay.js` to use new SimpleMarket API (`markets.markets[type]` array, `markets.getPrice()`)
+
+### Fix 2: Act Winner Display
+**Problem:** Winners not shown in UI after act resolution
+**Solution:** 
+- Added `renderActResults()` to GameDisplay showing winner, dice rolls, participants
+- Stored `lastActResults` in GameState for UI access
+- Added messages for act resolution with dice roll details
+
+### Fix 3: Non-Participant Penalties
+**Problem:** Penalties only applied per-act, not for players who skipped ALL acts
+**Solution:** Moved penalty logic to `GameEngine.endTurn()` - tracks all participants across acts, applies penalties from ALL selected acts to non-participants
+
+### Fix 4: Mandatory Event & Execution Act Per Round
+**Problem:** Events existed but weren't prominently displayed; all 3 execution acts shown
+**Solution:**
+- Added `mandatoryExecutionAct` to ActCardManager (randomly selected each round)
+- Added `announceRoundStart()` to GameEngine
+- Added `renderRoundAnnouncements()` to GameDisplay showing event + execution act cards
+- Only mandatory execution act shown (not all 3)
+
+### Fix 5: Centralized Validation Rules
+**Problem:** `rules.js` was empty stubs; validation scattered in Phases.js
+**Solution:** Moved all validation logic to `rules.js`:
+- `validateBid()` - Bid action validation
+- `validateWorkerPlacement()` - Worker placement with location requirements
+- `validateResourcePurchase()` - Market purchase validation
+- `validateLocationRequirements()` - Oracle, Guildhall, etc.
+- `canParticipateInAct()` - Act participation check
+- `checkWinConditions()` - Victory check
+- `checkGameOver()` - Game end check
+- `validateGameState()` - State consistency
+- `getValidWorkerLocations()` - For AI
+
+Phases.js now delegates to these centralized functions (~110 lines reduced to ~25 lines).
+
+---
+
+## Summary of All Files Modified
+
+| File | Changes |
+|------|---------|
+| `js/game/Market.js` | Complete rewrite - SimpleMarket class |
+| `js/game/GameState.js` | Added message system, lastActResults |
+| `js/game/GameEngine.js` | Updated market calls, messages, non-participant penalties, round announcements |
+| `js/game/Phases.js` | Added feeding costs/income, delegated validation to rules.js |
+| `js/game/ActCardManager.js` | Added dice rolls, mandatory execution act |
+| `js/ai/strategies/BasicStrategy.js` | Implemented random AI |
+| `js/ui/GameDisplay.js` | Message rendering, act results, round announcements, market display fix |
+| `js/utils/config.js` | Added economy config |
+| `js/utils/rules.js` | Complete validation logic centralized |
+| `css/style.css` | Added message styles |
+
+---
+
 ## Key Design Decisions
 
 1. **Minimum income floor (3 coins)** - Prevents losing players from entering unrecoverable death spiral
@@ -225,3 +284,5 @@ renderMessage(state) {
 3. **Array-based market** - Simpler than tracking availability flags
 4. **Message types** - Support for info/warning/success/error for future UI enhancements
 5. **Random AI probabilities** - Tuned for reasonable playtest games (40% bid, 70% place, 60% buy)
+6. **Mandatory single execution act** - Randomly selected each round, creates focus
+7. **Centralized validation** - All rules in one place for maintainability

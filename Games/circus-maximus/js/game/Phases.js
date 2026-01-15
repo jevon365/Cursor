@@ -4,6 +4,8 @@
  * Handles phase transitions, phase-specific rules, and phase actions
  */
 
+import { validateBid, validateWorkerPlacement, validateResourcePurchase } from '../utils/rules.js';
+
 export class Phases {
     constructor(config) {
         this.config = config;
@@ -458,129 +460,34 @@ export class Phases {
 
     /**
      * Get phase-specific rules for a player action
+     * Delegates to centralized rules.js for validation
      */
     validateAction(action, gameState) {
         const currentPhase = this.getCurrentPhase();
         if (!currentPhase) {
             return { valid: false, reason: 'No active phase' };
         }
-
-        const currentPlayer = gameState.getCurrentPlayer();
         
         switch (currentPhase.id) {
             case 'bidOnActs':
-                if (action.type === 'pass') {
-                    // First player must bid initially (cannot pass on first turn)
-                    // But after placing their first bid, they can pass
-                    const turnOrder = gameState.turnOrder || gameState.players.map((_, idx) => idx);
-                    const isFirstPlayer = gameState.currentPlayerIndex === turnOrder[0];
-                    
-                    if (isFirstPlayer) {
-                        // Check if first player has already placed at least one bid
-                        const currentPlayer = gameState.getCurrentPlayer();
-                        const hasBid = currentPlayer.bids && currentPlayer.bids.length > 0;
-                        
-                        if (!hasBid) {
-                            return { valid: false, reason: 'First player must place at least one bid before passing' };
-                        }
-                    }
-                } else if (action.type === 'bid') {
-                    // Validate bid
-                    if (!action.actId) {
-                        return { valid: false, reason: 'No act specified' };
-                    }
-                    if (!action.coins || action.coins < this.config.limits.minBid) {
-                        return { valid: false, reason: 'Bid too low' };
-                    }
-                    if (currentPlayer.getResource('coins') < action.coins) {
-                        return { valid: false, reason: 'Insufficient coins' };
-                    }
-                }
-                break;
+                return validateBid(action, gameState, this.config);
+            
             case 'placeWorkers':
-                if (action.type === 'placeWorker') {
-                    // Validate worker placement
-                    if (currentPlayer.workers.available <= 0) {
-                        return { valid: false, reason: 'No available workers' };
-                    }
-                    if (!action.locationId) {
-                        return { valid: false, reason: 'No location specified' };
-                    }
-                    // Check if location exists and is available
-                    const space = gameState.board.getSpace(action.locationId);
-                    if (!space) {
-                        return { valid: false, reason: 'Invalid location' };
-                    }
-                    // Check if location is disabled
-                    if (gameState.disabledLocations && gameState.disabledLocations.includes(action.locationId)) {
-                        return { valid: false, reason: 'Location is disabled this round' };
-                    }
-                    // Check worker cost
-                    const workerCost = this.config.limits.workerDeployCost + (gameState.workerCostModifier || 0);
-                    if (currentPlayer.getResource('coins') < workerCost) {
-                        return { valid: false, reason: 'Insufficient coins to deploy worker' };
-                    }
-                    // Check if player can place more workers at this location
-                    const availableSpaces = gameState.board.getAvailableSpaces(currentPlayer.id);
-                    if (!availableSpaces.find(s => s.id === action.locationId)) {
-                        return { valid: false, reason: 'Cannot place worker at this location (max reached or stock depleted)' };
-                    }
-                    
-                    // Location-specific validation
-                    const location = this.config.locations[action.locationId];
-                    if (location) {
-                        // Oracle: Must have animal
-                        if (location.id === 'oracle' || action.locationId === 'oracle') {
-                            if (currentPlayer.getResource('animals') < 1) {
-                                return { valid: false, reason: 'Oracle requires 1 animal to use' };
-                            }
-                        }
-                        
-                        // Guildhall: Must have slave + 5 coins + worker supply not empty
-                        if (location.id === 'guildhall' || action.locationId === 'guildhall') {
-                            if (currentPlayer.getResource('slaves') < 1) {
-                                return { valid: false, reason: 'Guildhall requires 1 slave to use' };
-                            }
-                            if (currentPlayer.getResource('coins') < workerCost + 5) {
-                                return { valid: false, reason: 'Guildhall requires 5 coins (in addition to worker cost) to use' };
-                            }
-                            if (gameState.getSupplyAmount('workers') < 1) {
-                                return { valid: false, reason: 'No workers available in supply for Guildhall' };
-                            }
-                        }
-                        
-                        // Prison: Check supply has prisoners (though may be unlimited, check anyway)
-                        if (location.id === 'prison' || action.locationId === 'prison') {
-                            // Prison can still be used even if supply is empty (may be unlimited)
-                            // But we'll check and warn if supply is empty
-                            // Note: This is informational - Prison may still work if supply is unlimited
-                            // The actual effect handler will handle taking what's available
-                        }
-                    }
-                }
-                break;
+                return validateWorkerPlacement(action, gameState, this.config);
+            
             case 'buyResources':
-                if (action.type === 'buyResource') {
-                    // Validate resource purchase
-                    if (!action.resourceType) {
-                        return { valid: false, reason: 'No resource type specified' };
-                    }
-                    
-                    // Check if this is the current market being resolved
-                    if (gameState.currentMarket !== action.resourceType) {
-                        return { valid: false, reason: `You can only buy from ${gameState.currentMarket || 'the current'} market right now. Markets are resolved one at a time.` };
-                    }
-                    
-                    // Check if player has worker in the market for this resource
-                    const marketQueue = gameState.marketQueues[action.resourceType];
-                    if (!marketQueue || !marketQueue.includes(currentPlayer.id)) {
-                        return { valid: false, reason: `You must have a worker in ${action.resourceType} market to buy this resource` };
-                    }
-                    // TODO: Check market availability and pricing
+                return validateResourcePurchase(action, gameState, this.config);
+            
+            case 'performActs':
+            case 'cleanup':
+                // Automatic phases - only pass is valid
+                if (action.type === 'pass') {
+                    return { valid: true };
                 }
-                break;
+                return { valid: false, reason: 'No player actions allowed in this phase' };
+            
+            default:
+                return { valid: false, reason: 'Unknown phase' };
         }
-        
-        return { valid: true };
     }
 }

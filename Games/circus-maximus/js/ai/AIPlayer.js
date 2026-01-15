@@ -8,16 +8,17 @@ import { BasicStrategy } from './strategies/BasicStrategy.js';
 import { CONFIG } from '../utils/config.js';
 
 export class AIPlayer {
-    constructor(player, strategy = null, difficulty = 'medium') {
+    constructor(player, strategy = null, difficulty = 'medium', config = CONFIG) {
         this.player = player;
         this.difficulty = difficulty;
+        this.config = config;
         this.strategy = strategy || new BasicStrategy(difficulty);
         
         // Configure strategy from config
-        if (CONFIG.ai && CONFIG.ai.difficulty && CONFIG.ai.difficulty[difficulty]) {
-            const config = CONFIG.ai.difficulty[difficulty];
-            this.strategy.lookAhead = config.lookAhead;
-            this.strategy.randomness = config.randomness;
+        if (config.ai && config.ai.difficulty && config.ai.difficulty[difficulty]) {
+            const difficultyConfig = config.ai.difficulty[difficulty];
+            this.strategy.lookAhead = difficultyConfig.lookAhead;
+            this.strategy.randomness = difficultyConfig.randomness;
         }
     }
 
@@ -28,7 +29,7 @@ export class AIPlayer {
         // Small delay to make AI feel more natural
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        const decision = this.strategy.decide(gameState, this.player);
+        const decision = this.strategy.decide(gameState, this.player, this.config);
         return decision;
     }
 

@@ -101,6 +101,9 @@
 - ⏳ Complete AI strategy for all phases
 - ⏳ Test AI against human players
 
+### Code Quality
+- ✅ Implement rules.js with actual validation logic (centralized from Phases.js)
+
 ### MVP Polish
 - ⏳ Add game instructions/help content
 - ⏳ Complete error handling for all edge cases

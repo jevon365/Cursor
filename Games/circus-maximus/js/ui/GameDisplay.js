@@ -70,22 +70,26 @@ export class GameDisplay {
     }
 
     /**
-     * Render current message from game state
+     * Render action log showing last 10 messages from game state
      */
     renderMessage(state) {
-        if (!state.message) return;
+        const history = state.messageHistory || [];
+        if (history.length === 0) return;
 
-        const messageBar = document.createElement('div');
-        messageBar.className = 'game-message';
+        const logContainer = document.createElement('div');
+        logContainer.className = 'game-action-log';
         
-        // Get message type from history if available
-        const lastMessage = state.messageHistory?.[state.messageHistory.length - 1];
-        const messageType = lastMessage?.type || 'info';
+        // Show last 10 messages
+        const recentMessages = history.slice(-10);
         
-        messageBar.classList.add(`message-${messageType}`);
-        messageBar.innerHTML = `<span class="message-text">${state.message}</span>`;
+        recentMessages.forEach(entry => {
+            const messageBar = document.createElement('div');
+            messageBar.className = `game-message message-${entry.type || 'info'}`;
+            messageBar.innerHTML = `<span class="message-text">${entry.msg}</span>`;
+            logContainer.appendChild(messageBar);
+        });
         
-        this.gamePlayContainer.appendChild(messageBar);
+        this.gamePlayContainer.appendChild(logContainer);
     }
 
     /**

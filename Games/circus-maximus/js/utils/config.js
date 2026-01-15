@@ -741,15 +741,15 @@ export const CONFIG = {
         difficulty: {
             easy: {
                 lookAhead: 1,
-                randomness: 0.3
+                randomness: 0.8 // 80% random - picks suboptimal moves often
             },
             medium: {
                 lookAhead: 2,
-                randomness: 0.1
+                randomness: 0.4 // 40% random - balanced
             },
             hard: {
                 lookAhead: 3,
-                randomness: 0.05
+                randomness: 0.1 // 10% random - mostly optimal
             }
         }
     }

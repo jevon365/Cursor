@@ -360,6 +360,13 @@ export class GameEngine {
                 
                 // Store results for UI display
                 this.state.lastActResults = resolutionResults;
+                
+                // Check for win conditions after acts resolve (tracks may have changed)
+                if (this.state.checkGameOver()) {
+                    const winner = this.state.determineWinner();
+                    this.state.endGame(winner);
+                    return; // Game over, stop processing
+                }
             }
             
             // Restock markets during cleanup phase (before phase end)
@@ -384,18 +391,66 @@ export class GameEngine {
             
             this.phases.onPhaseEnd(this.state);
             
-            // Move to next phase
-            if (this.phases.nextPhase()) {
-                const nextPhase = this.phases.getCurrentPhase();
-                this.state.setPhase(nextPhase.id);
-                this.phases.onPhaseStart(this.state);
-            } else {
+            // Special handling: if we just finished cleanup, always start new round
+            if (currentPhaseId === 'cleanup') {
                 // All phases complete - start new round
+                // Explicitly reset phase index to ensure we start from the beginning
                 this.phases.reset();
+                
+                // Verify reset worked
+                if (this.phases.currentPhaseIndex !== 0) {
+                    console.warn(`Phase index after reset is ${this.phases.currentPhaseIndex}, expected 0. Forcing reset.`);
+                    this.phases.currentPhaseIndex = 0;
+                }
+                
                 const firstPhase = this.phases.getCurrentPhase();
                 if (firstPhase) {
+                    // Ensure phase is set correctly - do this BEFORE onPhaseStart
                     this.state.setPhase(firstPhase.id);
+                    
+                    // Clear passed players before starting new phase
+                    this.state.clearPassedPlayers();
+                    
+                    // Initialize the new phase - this sets up turn order
                     this.phases.onPhaseStart(this.state);
+                    
+                    // Double-check that phase is still set correctly after onPhaseStart
+                    if (this.state.currentPhase !== firstPhase.id) {
+                        console.warn(`Phase mismatch: expected ${firstPhase.id}, got ${this.state.currentPhase}. Correcting...`);
+                        this.state.setPhase(firstPhase.id);
+                    }
+                    
+                    // Check for win conditions after round increment (round limit check)
+                    if (this.state.checkGameOver()) {
+                        const winner = this.state.determineWinner();
+                        this.state.endGame(winner);
+                        return; // Game over, stop processing
+                    }
+                } else {
+                    // No phase available - this shouldn't happen but handle it
+                    console.error('No first phase available after reset. Phases array:', this.phases.phases);
+                    console.error('Phase index:', this.phases.currentPhaseIndex);
+                }
+            } else {
+                // Move to next phase (not cleanup)
+                if (this.phases.nextPhase()) {
+                    const nextPhase = this.phases.getCurrentPhase();
+                    if (nextPhase) {
+                        this.state.setPhase(nextPhase.id);
+                        this.phases.onPhaseStart(this.state);
+                    } else {
+                        console.error('nextPhase() returned true but getCurrentPhase() returned null');
+                    }
+                } else {
+                    // This shouldn't happen for non-cleanup phases, but handle it
+                    console.warn(`Phase ${currentPhaseId} ended but nextPhase() returned false. Resetting to first phase.`);
+                    this.phases.reset();
+                    const firstPhase = this.phases.getCurrentPhase();
+                    if (firstPhase) {
+                        this.state.setPhase(firstPhase.id);
+                        this.state.clearPassedPlayers();
+                        this.phases.onPhaseStart(this.state);
+                    }
                 }
             }
         }
