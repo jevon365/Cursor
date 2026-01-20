@@ -1,0 +1,4 @@
+# Tableau workbooks are large binary files
+# Don't commit these to the repository
+*.twbx
+*.twb

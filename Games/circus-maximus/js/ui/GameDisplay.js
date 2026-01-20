@@ -4,6 +4,16 @@
  * Complete UI implementation with all game elements
  */
 
+import { PlayerPanel } from './PlayerPanel.js';
+import { VictoryTracks } from './VictoryTracks.js';
+import { MarketsPanel } from './MarketsPanel.js';
+import { CityBackdrop } from './CityBackdrop.js';
+import { RoundInfoPanel } from './RoundInfoPanel.js';
+import { PhaseIndicator } from './PhaseIndicator.js';
+import { ActionPanel } from './ActionPanel.js';
+import { ActionLog } from './ActionLog.js';
+import { BiddingPopup } from './BiddingPopup.js';
+
 export class GameDisplay {
     constructor(gameEngine) {
         this.gameEngine = gameEngine;
@@ -12,6 +22,19 @@ export class GameDisplay {
         this.selectedLocationId = null;
         this.selectedResourceType = null;
         this.bidAmount = 0;
+        this.playerPanels = []; // Track PlayerPanel instances
+        this.victoryTracks = null; // VictoryTracks instance
+        this.marketsPanel = null; // MarketsPanel instance
+        this.cityBackdrop = null; // CityBackdrop instance
+        this.roundInfoPanel = null; // RoundInfoPanel instance
+        this.phaseIndicator = null; // PhaseIndicator instance
+        this.actionPanel = null; // ActionPanel instance
+        this.actionLog = null; // ActionLog instance
+        this.biddingPopup = null; // BiddingPopup instance
+        this.lastPhase = null; // Track phase changes
+        this.biddingPopupTimeout = null; // Store timeout for popup delay
+        // Expose to window for RoundInfoPanel access
+        window.gameDisplay = this;
     }
 
     /**
@@ -19,34 +42,312 @@ export class GameDisplay {
      */
     update() {
         if (!this.gamePlayContainer) {
+            console.warn('GameDisplay.update(): gamePlayContainer not found');
+            return;
+        }
+
+        // Check if game-play screen is active and visible
+        const gamePlayScreen = document.getElementById('game-play');
+        if (!gamePlayScreen) {
+            console.warn('GameDisplay.update(): game-play screen not found');
+            return;
+        }
+        
+        if (!gamePlayScreen.classList.contains('active')) {
+            console.warn('GameDisplay.update(): game-play screen is not active');
+            return;
+        }
+        
+        // Verify containers exist and are accessible
+        const containers = [
+            'player-panels-top',
+            'markets-panel-left',
+            'city-backdrop-center',
+            'victory-tracks-right',
+            'round-info-bottom'
+        ];
+        
+        const missingContainers = containers.filter(id => !document.getElementById(id));
+        if (missingContainers.length > 0) {
+            console.error('GameDisplay.update(): Missing containers:', missingContainers);
             return;
         }
 
         const state = this.gameEngine.getState();
+        if (!state) {
+            console.error('GameDisplay.update(): No game state available');
+            return;
+        }
         
-        // Clear previous content
-        this.gamePlayContainer.innerHTML = '';
+        try {
+            // Render new UI components (5-region layout)
+            this.renderPlayerPanels(state);
+            this.renderVictoryTracks(state);
+            this.renderMarketsPanel(state);
+            this.renderCityBackdrop(state);
+            this.renderRoundInfoPanel(state);
+            this.renderPhaseIndicator(state);
+            this.renderActionPanel(state);
+            this.initializeActionLog(); // ActionLog is initialized once, then updated via messages
+            this.manageBiddingPopup(state); // Manage bidding popup based on phase
+        } catch (error) {
+            console.error('Error rendering game display:', error);
+            throw error;
+        }
 
-        // Game info bar
-        this.renderGameInfo(state);
+        // Keep old rendering for now (will migrate gradually in Batch 9)
+        // For now, we'll keep both systems working side by side
+        // The new layout containers exist, but old content may still render below
+    }
 
-        // Message display
-        this.renderMessage(state);
+    /**
+     * Render player resource panels in top bar (Batch 2)
+     */
+    renderPlayerPanels(state) {
+        const container = document.getElementById('player-panels-top');
+        if (!container) {
+            console.warn('renderPlayerPanels: container not found');
+            return;
+        }
+        
+        if (!state || !state.players || state.players.length === 0) {
+            console.warn('renderPlayerPanels: No players in state', state);
+            // Show placeholder if no players
+            container.innerHTML = '<div style="padding: 8px; color: #666;">No players</div>';
+            return;
+        }
+        
+        // Clear existing panels if player count changed
+        if (this.playerPanels.length !== state.players.length) {
+            container.innerHTML = '';
+            this.playerPanels = [];
+        }
+        
+        // Create or update panels for each player
+        state.players.forEach((player, index) => {
+            try {
+                // Create panel div if it doesn't exist
+                if (!this.playerPanels[index]) {
+                    const panelDiv = document.createElement('div');
+                    // No inline styles - let CSS handle sizing and layout
+                    container.appendChild(panelDiv);
+                    this.playerPanels[index] = new PlayerPanel(panelDiv, player, index, this.gameEngine);
+                } else {
+                    // Update existing panel
+                    this.playerPanels[index].update(player, state.currentPlayer && state.currentPlayer.id === player.id);
+                }
+            } catch (error) {
+                console.error(`Error rendering player panel ${index}:`, error);
+            }
+        });
+    }
 
-        // Round announcements (event + mandatory execution act)
-        this.renderRoundAnnouncements(state);
+    /**
+     * Render victory tracks panel (Batch 3)
+     */
+    renderVictoryTracks(state) {
+        let container = document.getElementById('victory-tracks-right');
+        if (!container) {
+            // Try fallback selectors
+            container = document.querySelector('#victory-tracks-right') || 
+                       document.querySelector('.victory-tracks-panel');
+            if (!container) {
+                console.error('renderVictoryTracks: No container found');
+                return;
+            }
+        }
+        
+        try {
+            if (!this.victoryTracks) {
+                if (!this.gameEngine) {
+                    throw new Error('GameEngine is not available');
+                }
+                this.victoryTracks = new VictoryTracks(container, this.gameEngine);
+            }
+            // Always update with current state
+            this.victoryTracks.update(state);
+        } catch (error) {
+            console.error('Error rendering victory tracks:', error);
+            if (container) {
+                container.innerHTML = `<div style="padding: 16px; color: red; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">Error: ${error.message}</div>`;
+            }
+        }
+    }
 
-        // Selected acts display (acts chosen for this round)
-        this.renderSelectedActs(state);
+    /**
+     * Render markets panel (Batch 4)
+     */
+    renderMarketsPanel(state) {
+        const container = document.getElementById('markets-panel-left');
+        if (!container) return;
+        
+        try {
+            if (!this.marketsPanel) {
+                this.marketsPanel = new MarketsPanel(container, this.gameEngine);
+            } else {
+                this.marketsPanel.update(state);
+            }
+        } catch (error) {
+            console.error('Error rendering markets panel:', error);
+            container.innerHTML = `<div style="padding: 16px; color: red; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">Error: ${error.message}</div>`;
+        }
+    }
 
-        // Player info cards with victory tracks
-        this.renderPlayers(state);
+    /**
+     * Render city backdrop with location spots (Batch 5)
+     */
+    renderCityBackdrop(state) {
+        const container = document.getElementById('city-backdrop-center');
+        if (!container) {
+            console.warn('renderCityBackdrop: container not found');
+            return;
+        }
+        
+        try {
+            if (!this.cityBackdrop) {
+                this.cityBackdrop = new CityBackdrop(container, this.gameEngine);
+                // Handle location selection
+                this.cityBackdrop.onLocationSelect = (locationId) => {
+                    this.selectedLocationId = locationId;
+                    this.update();
+                };
+            } else {
+                this.cityBackdrop.update(state);
+            }
+        } catch (error) {
+            console.error('Error rendering city backdrop:', error);
+            container.innerHTML = `<div style="padding: 16px; color: red; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">Error: ${error.message}</div>`;
+        }
+    }
 
-        // Phase-specific displays
-        this.renderPhaseContent(state);
+    /**
+     * Render round info panel (Batch 6)
+     */
+    renderRoundInfoPanel(state) {
+        const container = document.getElementById('round-info-bottom');
+        if (!container) {
+            console.warn('renderRoundInfoPanel: container not found');
+            return;
+        }
+        
+        try {
+            if (!this.roundInfoPanel) {
+                this.roundInfoPanel = new RoundInfoPanel(container, this.gameEngine);
+                // Sync selections
+                this.roundInfoPanel.selectedActId = this.selectedActId;
+                this.roundInfoPanel.bidAmount = this.bidAmount;
+            } else {
+                // Sync selections before update
+                this.roundInfoPanel.selectedActId = this.selectedActId;
+                this.roundInfoPanel.bidAmount = this.bidAmount;
+                this.roundInfoPanel.update(state);
+            }
+        } catch (error) {
+            console.error('Error rendering round info panel:', error);
+            container.innerHTML = `<div style="padding: 16px; color: red; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">Error: ${error.message}</div>`;
+        }
+    }
 
-        // Actions panel
-        this.renderActions(state);
+    /**
+     * Render phase indicator (Batch 7)
+     */
+    renderPhaseIndicator(state) {
+        const container = document.getElementById('phase-indicator');
+        if (!container) return;
+        
+        if (!this.phaseIndicator) {
+            this.phaseIndicator = new PhaseIndicator(container, this.gameEngine);
+        } else {
+            this.phaseIndicator.update(state);
+        }
+    }
+
+    /**
+     * Render action panel (Batch 7)
+     */
+    renderActionPanel(state) {
+        const container = document.getElementById('action-panel');
+        if (!container) return;
+        
+        // Need uiManager reference - will be set by UIManager
+        const uiManager = window.uiManager;
+        if (!uiManager) return;
+        
+        if (!this.actionPanel) {
+            this.actionPanel = new ActionPanel(container, this.gameEngine, uiManager);
+        } else {
+            this.actionPanel.update(state);
+        }
+    }
+
+    /**
+     * Initialize action log (Batch 8)
+     */
+    initializeActionLog() {
+        const container = document.getElementById('action-log');
+        if (!container || this.actionLog) return;
+        
+        this.actionLog = new ActionLog(container, this.gameEngine);
+    }
+
+    /**
+     * Manage bidding popup - show/hide based on phase
+     */
+    manageBiddingPopup(state) {
+        const currentPhase = state.currentPhase;
+        
+        // Initialize popup if needed
+        if (!this.biddingPopup) {
+            this.biddingPopup = new BiddingPopup(this.gameEngine);
+        }
+        
+        // Sync selections with popup
+        if (this.biddingPopup) {
+            this.biddingPopup.selectedActId = this.selectedActId;
+            this.biddingPopup.bidAmount = this.bidAmount;
+        }
+        
+        // Show popup when entering bidding phase
+        if (currentPhase === 'bidOnActs') {
+            if (this.lastPhase !== 'bidOnActs') {
+                // Just entered bidding phase - show popup with delay
+                // Clear any existing timeout
+                if (this.biddingPopupTimeout) {
+                    clearTimeout(this.biddingPopupTimeout);
+                }
+                // Show popup after 800ms delay
+                this.biddingPopupTimeout = setTimeout(() => {
+                    this.biddingPopup.show();
+                    this.biddingPopupTimeout = null;
+                }, 800);
+            } else {
+                // Already in bidding phase - update popup
+                this.biddingPopup.update();
+            }
+        } else {
+            // Not in bidding phase - hide popup immediately
+            // Clear any pending timeout
+            if (this.biddingPopupTimeout) {
+                clearTimeout(this.biddingPopupTimeout);
+                this.biddingPopupTimeout = null;
+            }
+            if (this.lastPhase === 'bidOnActs') {
+                // Just left bidding phase - hide popup
+                this.biddingPopup.hide();
+            }
+        }
+        
+        // Update last phase
+        this.lastPhase = currentPhase;
+    }
+
+    /**
+     * Add entry to action log
+     */
+    logAction(message, type = 'info', playerId = null) {
+        if (this.actionLog) {
+            this.actionLog.addEntry(message, type, playerId);
+        }
     }
 
     /**
@@ -262,8 +563,9 @@ export class GameDisplay {
                 resourcesHtml += `<div class="resource ${key}"><span>${this.formatResourceName(key)}:</span> <span>${value}</span></div>`;
             });
             
-            // Victory tracks
-            const tracksHtml = this.renderVictoryTracks(player, state.blockedTracks || []);
+            // Victory tracks - ensure blockedTracks is an array
+            const blockedTracks = Array.isArray(state.blockedTracks) ? state.blockedTracks : [];
+            const tracksHtml = this.renderPlayerVictoryTracks(player, blockedTracks);
             
             playerCard.innerHTML = `
                 <h3>${player.name} ${isCurrent ? '(Current)' : ''}</h3>
@@ -278,9 +580,12 @@ export class GameDisplay {
     }
 
     /**
-     * Render victory tracks for a player
+     * Render victory tracks for a player (legacy method - used in old rendering)
      */
-    renderVictoryTracks(player, blockedTracks) {
+    renderPlayerVictoryTracks(player, blockedTracks) {
+        // Ensure blockedTracks is an array
+        const blockedTracksArray = Array.isArray(blockedTracks) ? blockedTracks : [];
+        
         const tracks = [
             { id: 'empire', name: 'Empire', value: player.victoryTracks?.empire || 0 },
             { id: 'population', name: 'Population', value: player.victoryTracks?.population || 0 },
@@ -289,7 +594,7 @@ export class GameDisplay {
 
         let html = '<div class="victory-tracks">';
         tracks.forEach(track => {
-            const isBlocked = blockedTracks.includes(track.id);
+            const isBlocked = blockedTracksArray.includes(track.id);
             const min = -10;
             const max = 20;
             const range = max - min;

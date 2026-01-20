@@ -1,0 +1,216 @@
+/* City Backdrop CSS - Center Game Board */
+
+.city-backdrop {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.location-spot {
+    position: absolute;
+    width: 70px; /* Larger for better visibility and touch targets */
+    height: 70px;
+    border-radius: 50%;
+    background: rgba(253, 245, 230, 0.7); /* Match player panel default opacity */
+    border: 4px solid var(--color-border, #CD853F); /* Thicker border */
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8em; /* Slightly larger text */
+    text-align: center;
+    padding: 4px;
+    font-family: var(--font-family, 'Times New Roman', serif);
+    box-shadow: 
+        0 4px 8px rgba(0,0,0,0.3),
+        0 0 0 2px rgba(255, 255, 255, 0.5); /* Outer glow for visibility */
+    transform: translate(-50%, -50%);
+}
+
+.location-spot:hover {
+    border-color: var(--color-primary, #8B0000);
+    background: rgba(253, 245, 230, 0.85); /* Match player panel hover opacity */
+    transform: translate(-50%, -50%) scale(1.15); /* Slightly more scale */
+    box-shadow: 
+        0 6px 12px rgba(0,0,0,0.4),
+        0 0 0 4px rgba(139, 0, 0, 0.3); /* Red glow on hover */
+    z-index: 20;
+}
+
+.location-spot.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(200, 200, 200, 0.5);
+}
+
+.location-spot.selected {
+    border-color: var(--color-primary, #8B0000);
+    border-width: 4px;
+    background: rgba(253, 245, 230, 0.75); /* Match player panel current player opacity */
+    box-shadow: 0 0 0 4px rgba(139, 0, 0, 0.2);
+}
+
+.location-spot.has-worker {
+    border-color: var(--color-success, #228B22);
+}
+
+/* Forest location - move 50px to the right */
+.location-spot[data-location-id="forest"] {
+    transform: translate(calc(-50% + 50px), -50%);
+}
+
+.location-spot[data-location-id="forest"]:hover {
+    transform: translate(calc(-50% + 50px), -50%) scale(1.15);
+}
+
+.location-name {
+    font-weight: 600;
+    color: var(--color-text, #2C1810);
+    text-shadow: 
+        1px 1px 3px rgba(0, 0, 0, 0.9),
+        -1px -1px 2px rgba(255, 255, 255, 0.5),
+        0 0 4px rgba(0, 0, 0, 0.3); /* Enhanced text shadow */
+    font-size: 0.85em;
+    line-height: 1.2;
+    word-wrap: break-word;
+    max-width: 100%;
+}
+
+.worker-token {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    z-index: 10;
+    transform: translate(-50%, -50%);
+    transition: all 0.3s ease;
+}
+
+.worker-token.placing {
+    animation: tokenPlace 0.3s ease;
+}
+
+.worker-token.removing {
+    animation: tokenRemove 0.3s ease;
+}
+
+@keyframes tokenPlace {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes tokenRemove {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+    }
+}
+
+/* Location Tooltip - Highest z-index for dropdowns/tooltips */
+.location-tooltip {
+    position: fixed;
+    background: rgba(44, 24, 16, 0.95);
+    color: white;
+    padding: 16px;
+    border-radius: 6px;
+    max-width: 300px;
+    z-index: 10000; /* Highest - above everything including floating elements */
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    font-family: var(--font-family, 'Times New Roman', serif);
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tooltip-title {
+    font-weight: 700;
+    font-size: 1.2em;
+    margin-bottom: 8px;
+    color: var(--color-highlight, #FFF8DC);
+}
+
+.tooltip-description {
+    margin: 8px 0;
+    font-size: 0.9em;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.tooltip-cost {
+    margin: 8px 0;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.tooltip-workers {
+    margin-top: 8px;
+    font-size: 0.875em;
+    color: var(--color-highlight, #FFF8DC);
+}
+
+.tooltip-info {
+    margin-top: 6px;
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1199px) {
+    .location-spot {
+        width: 50px;
+        height: 50px;
+        font-size: 0.7em;
+    }
+    
+    .worker-token {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+@media (max-width: 767px) {
+    .location-spot {
+        width: 45px;
+        height: 45px;
+        font-size: 0.65em;
+    }
+    
+    .worker-token {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .location-tooltip {
+        max-width: 250px;
+        font-size: 0.9em;
+    }
+}

@@ -1,0 +1,314 @@
+/* Victory Tracks CSS - Vertical Thermometer-Style Bars */
+
+.victory-tracks-container {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 1px !important; /* Reduced gap when retracted to fit better */
+    padding: 0 !important;
+    justify-content: space-around !important;
+    align-items: stretch !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    opacity: 1 !important; /* Match player panels - always visible, individual containers handle opacity */
+    overflow: visible !important; /* Allow content to be visible - prevent clipping */
+    transition: opacity 0.3s ease !important;
+    width: 100% !important; /* Take full width of parent */
+    box-sizing: border-box !important;
+}
+
+/* Keep hover state for consistency (no opacity change needed) */
+.victory-tracks-panel:hover .victory-tracks-container {
+    opacity: 1;
+    gap: 2px !important; /* Increase gap when expanded */
+}
+
+/* When panel is expanded, increase container padding and spacing */
+.victory-tracks-panel:hover .track-container {
+    padding: 4px 4px !important; /* More padding when expanded */
+    border-radius: 6px !important; /* Larger radius when expanded */
+}
+
+/* Retracted state indicator */
+.victory-tracks-panel::before {
+    content: 'V';
+    position: absolute;
+    top: 50%;
+    right: 50%;
+    transform: translate(50%, -50%) rotate(90deg);
+    font-size: 1.2em;
+    font-weight: 700;
+    color: var(--color-text, #2C1810);
+    text-shadow: 
+        1px 1px 3px rgba(0, 0, 0, 0.9),
+        -1px -1px 2px rgba(255, 255, 255, 0.3),
+        0 0 4px rgba(0, 0, 0, 0.5);
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 10;
+    white-space: nowrap;
+}
+
+/* Hide indicator when expanded */
+.victory-tracks-panel:hover::before {
+    opacity: 0;
+}
+
+.track-container {
+    background: rgba(253, 245, 230, 0.7) !important; /* Match player panel default opacity */
+    border: 1px solid rgba(205, 133, 63, 0.4) !important; /* Subtle border matching market */
+    padding: 4px 1px !important; /* Minimal horizontal padding - 1px on each side */
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    max-width: 100% !important; /* Prevent overflow */
+    height: 100% !important;
+    min-height: 0 !important;
+    border-radius: 4px !important; /* Smaller radius when retracted */
+    box-sizing: border-box !important; /* Include border in width calculation */
+}
+
+.track-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px; /* Match markets panel gap */
+    margin-bottom: 2px; /* Match markets panel margin */
+    width: 100%;
+    flex-shrink: 0;
+    padding-bottom: 2px; /* Match markets panel padding */
+}
+
+.track-icon {
+    width: 24px; /* Match markets icon size */
+    height: 24px; /* Match markets icon size */
+    object-fit: contain;
+    flex-shrink: 0;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.track-title {
+    font-weight: 700;
+    font-size: 0.95em; /* Match markets title size */
+    font-family: var(--font-family, 'Times New Roman', serif);
+    text-shadow: 
+        2px 2px 4px rgba(0, 0, 0, 1),
+        -1px -1px 2px rgba(255, 255, 255, 0.8),
+        0 0 6px rgba(0, 0, 0, 0.8);
+    text-align: center;
+    white-space: nowrap;
+    color: var(--color-text, #2C1810) !important; /* Fully opaque for better legibility */
+    line-height: 1.1; /* Match markets line-height */
+}
+
+.track-title.blocked {
+    opacity: 0.5;
+    text-decoration: line-through;
+}
+
+.track-range {
+    font-size: 0.75em; /* Match markets price size */
+    font-weight: 600;
+    font-family: var(--font-family, 'Times New Roman', serif);
+    text-shadow: 
+        1px 1px 3px rgba(0, 0, 0, 0.9),
+        -1px -1px 2px rgba(255, 255, 255, 0.8),
+        0 0 4px rgba(0, 0, 0, 0.7);
+    color: rgba(44, 24, 16, 1) !important; /* Fully opaque for better legibility */
+}
+
+.track-bar-wrapper {
+    position: relative;
+    margin: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    min-height: 0;
+    background: transparent;
+    padding: 0 8px; /* Match markets panel padding */
+    justify-content: space-between;
+    gap: 4px; /* Space between scale labels and bar */
+}
+
+.track-bar {
+    position: relative !important;
+    width: 24px !important; /* Match markets bar width */
+    flex: 1 !important;
+    min-height: 0 !important; /* Let flex handle height like markets */
+    max-height: 100% !important; /* Constrain to available space */
+    border: 2px solid rgba(205, 133, 63, 0.6) !important; /* Match markets border */
+    border-radius: 12px !important; /* Fully rounded like market bars (pill-shaped) */
+    background: transparent !important; /* Fully transparent */
+    background-image: none !important;
+    box-shadow: none !important; /* Remove shadows for transparency */
+    overflow: visible !important;
+    order: 2 !important; /* Between scale labels */
+}
+
+.track-marker {
+    position: absolute;
+    transform: translateX(-50%) translateY(-50%);
+    width: 14px; /* Much further reduced from 16px to 14px */
+    height: 14px; /* Much further reduced from 16px to 14px */
+    border-radius: 50%;
+    border: 1.5px solid white !important; /* Reduced border from 2px to 1.5px */
+    box-shadow: 
+        0 2px 6px rgba(0,0,0,0.4),
+        0 0 0 1px rgba(0,0,0,0.1);
+    z-index: 10;
+    transition: bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease, opacity 0.2s ease, left 0.2s ease;
+    cursor: pointer;
+    opacity: 1;
+    /* Ensure it's a perfect circle */
+    min-width: 14px;
+    min-height: 14px;
+    max-width: 14px;
+    max-height: 14px;
+}
+
+.track-marker:hover {
+    transform: translateX(-50%) translateY(-50%) scale(1.3);
+    z-index: 12;
+    opacity: 0.9;
+    /* Slightly bring forward on hover */
+    filter: brightness(1.1);
+}
+
+/* When a marker is hovered, make non-hovered markers more visible and bring them forward slightly */
+.track-bar:hover .track-marker:not(:hover) {
+    opacity: 0.95;
+    z-index: 11;
+}
+
+/* When hovering over the track bar, slightly increase visibility of all markers */
+.track-bar:hover .track-marker {
+    box-shadow: 
+        0 2px 8px rgba(0,0,0,0.5),
+        0 0 0 2px rgba(255,255,255,0.3);
+}
+
+.track-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px; /* Match markets footer gap */
+    margin-top: 2px; /* Match markets footer margin */
+    width: 100%;
+    flex-shrink: 0;
+    padding-top: 2px; /* Match markets footer padding */
+}
+
+.track-scale-max,
+.track-scale-min {
+    font-size: 0.75em; /* Match markets footer font size */
+    font-weight: 600;
+    font-family: var(--font-family, 'Times New Roman', serif);
+    text-shadow: 
+        1px 1px 3px rgba(0, 0, 0, 0.9),
+        -1px -1px 2px rgba(255, 255, 255, 0.8),
+        0 0 4px rgba(0, 0, 0, 0.7);
+    color: rgba(44, 24, 16, 1) !important; /* Fully opaque for better legibility */
+    pointer-events: none;
+    line-height: 1;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* Position max label at top of bar wrapper */
+.track-scale-max {
+    order: 1;
+}
+
+/* Position min label at bottom of bar wrapper */
+.track-scale-min {
+    order: 3;
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 1199px) {
+    .track-bar {
+        width: 18px; /* Reduced from 22px to 18px */
+        min-height: 250px;
+    }
+    
+    .track-marker {
+        width: 16px; /* Reduced from 18px to 16px */
+        height: 16px;
+    }
+    
+    .track-icon {
+        width: 24px; /* Reduced from 28px to 24px */
+        height: 24px;
+    }
+}
+
+@media (max-width: 767px) {
+    .victory-tracks-container {
+        flex-direction: column;
+        gap: 20px;
+        height: auto;
+        opacity: 1 !important; /* Always visible on mobile when panel is expanded */
+    }
+    
+    .track-container {
+        width: 100%;
+        height: auto;
+        min-height: 300px;
+    }
+    
+    .track-bar {
+        width: 20px;
+        min-height: 250px;
+    }
+    
+    .track-marker {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .track-icon {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+.track-bar-tooltip {
+    position: fixed;
+    background: rgba(44, 24, 16, 0.95);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 0.875em;
+    pointer-events: none;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    font-family: var(--font-family, 'Times New Roman', serif);
+    min-width: 150px;
+    text-align: left;
+    white-space: normal;
+    transition: opacity 0.2s ease;
+}
+
+.track-bar-tooltip strong {
+    color: var(--color-highlight, #FFF8DC);
+    font-weight: 700;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-100%) translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-100%) translateY(0);
+    }
+}

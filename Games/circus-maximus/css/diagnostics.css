@@ -1,0 +1,172 @@
+/* DIAGNOSTIC CSS - Visual Layer Testing
+ * Add ?diagnostics=true to URL to activate, or uncomment the @import in style.css
+ * 
+ * This file helps diagnose z-index and layering issues by adding visual indicators
+ */
+
+/* Show all z-index values as pseudo-elements */
+.game-container::before {
+    content: "Container z-index: 1001";
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    font-size: 10px;
+    z-index: 99999;
+    pointer-events: none;
+    font-family: monospace;
+}
+
+.city-backdrop::before {
+    content: "Backdrop z-index: 1";
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(255, 255, 0, 0.8);
+    color: black;
+    padding: 4px 8px;
+    font-size: 10px;
+    z-index: 9999;
+    pointer-events: none;
+    font-family: monospace;
+    border: 1px solid black;
+}
+
+.player-panels::before {
+    content: "Player Panels z-index: 50";
+    position: absolute;
+    top: -20px;
+    left: 10px;
+    background: rgba(255, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    font-size: 10px;
+    z-index: 9999;
+    pointer-events: none;
+    font-family: monospace;
+    border: 1px solid black;
+}
+
+.markets-panel::before {
+    content: "Markets z-index: 50";
+    position: absolute;
+    top: 10px;
+    left: -80px;
+    background: rgba(0, 255, 0, 0.8);
+    color: black;
+    padding: 4px 8px;
+    font-size: 10px;
+    z-index: 9999;
+    pointer-events: none;
+    font-family: monospace;
+    border: 1px solid black;
+    writing-mode: vertical-lr;
+    text-orientation: mixed;
+}
+
+.victory-tracks-panel::before {
+    content: "Victory Tracks z-index: 50";
+    position: absolute;
+    top: 10px;
+    right: -100px;
+    background: rgba(0, 0, 255, 0.8);
+    color: white;
+    padding: 4px 8px;
+    font-size: 10px;
+    z-index: 9999;
+    pointer-events: none;
+    font-family: monospace;
+    border: 1px solid black;
+    writing-mode: vertical-lr;
+    text-orientation: mixed;
+}
+
+.round-info-panel::before {
+    content: "Round Info z-index: 50";
+    position: absolute;
+    bottom: -20px;
+    left: 10px;
+    background: rgba(255, 0, 255, 0.8);
+    color: white;
+    padding: 4px 8px;
+    font-size: 10px;
+    z-index: 9999;
+    pointer-events: none;
+    font-family: monospace;
+    border: 1px solid black;
+}
+
+.phase-indicator::before {
+    content: "Phase Indicator z-index: 200";
+    position: absolute;
+    top: -25px;
+    left: 0;
+    background: rgba(255, 165, 0, 0.9);
+    color: black;
+    padding: 4px 8px;
+    font-size: 10px;
+    z-index: 9999;
+    pointer-events: none;
+    font-family: monospace;
+    border: 1px solid black;
+    white-space: nowrap;
+}
+
+.action-panel::before {
+    content: "Action Panel z-index: 200";
+    position: absolute;
+    bottom: -25px;
+    left: 0;
+    background: rgba(255, 165, 0, 0.9);
+    color: black;
+    padding: 4px 8px;
+    font-size: 10px;
+    z-index: 9999;
+    pointer-events: none;
+    font-family: monospace;
+    border: 1px solid black;
+    white-space: nowrap;
+}
+
+.action-log::before {
+    content: "Action Log z-index: 200";
+    position: absolute;
+    top: -25px;
+    right: 0;
+    background: rgba(0, 255, 255, 0.9);
+    color: black;
+    padding: 4px 8px;
+    font-size: 10px;
+    z-index: 9999;
+    pointer-events: none;
+    font-family: monospace;
+    border: 1px solid black;
+    white-space: nowrap;
+}
+
+/* Highlight all elements with position: fixed or absolute */
+[style*="position: fixed"],
+[style*="position: absolute"] {
+    outline: 2px dashed rgba(255, 0, 255, 0.5) !important;
+}
+
+/* Show stacking context boundaries */
+.game-container,
+.player-panels,
+.markets-panel,
+.victory-tracks-panel,
+.round-info-panel,
+.city-backdrop {
+    /* Add a subtle outline to show stacking boundaries */
+    outline-offset: -2px;
+}
+
+/* Grid area visualizer */
+.game-container {
+    background-image: 
+        linear-gradient(rgba(255, 0, 0, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+}

@@ -1,0 +1,124 @@
+---
+title: "Circus Maximus - Configuration Comparison"
+author: "Playtesting Report"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 10,
+  fig.height = 6
+)
+
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+source("load-data.R")
+source("utils/balance-metrics.R")
+```
+
+# Configuration Comparison
+
+Compare two playtest configurations to determine which performs better.
+
+```{r load-data}
+# Load both configurations
+config_a <- load_playtest_csv("../../data/exports/config-a.csv")
+config_b <- load_playtest_csv("../../data/exports/config-b.csv")
+
+# Or from JSON:
+# config_a <- load_playtest_json("../../data/raw/config-comparison/config-a-50-games.json")
+# config_b <- load_playtest_json("../../data/raw/config-comparison/config-b-50-games.json")
+
+cat("Config A: ", nrow(config_a), " games\n")
+cat("Config B: ", nrow(config_b), " games\n")
+```
+
+# Game Length Comparison
+
+```{r game-length-comparison}
+comparison_rounds <- compare_configs(config_a, config_b, "rounds")
+
+cat(comparison_rounds$message, "\n")
+
+# Visualization
+bind_rows(
+  config_a %>% mutate(config = "Config A"),
+  config_b %>% mutate(config = "Config B")
+) %>%
+  filter(completed == TRUE) %>%
+  ggplot(aes(x = rounds, fill = config)) +
+  geom_histogram(alpha = 0.6, position = "identity", binwidth = 1) +
+  geom_vline(aes(xintercept = mean(config_a$rounds[config_a$completed]), 
+                 color = "Config A"), linetype = "dashed", size = 1) +
+  geom_vline(aes(xintercept = mean(config_b$rounds[config_b$completed]), 
+                 color = "Config B"), linetype = "dashed", size = 1) +
+  labs(
+    title = "Game Length Comparison",
+    x = "Rounds",
+    y = "Frequency",
+    fill = "Configuration",
+    color = "Mean"
+  ) +
+  theme_minimal()
+```
+
+# Track Balance Comparison
+
+```{r track-balance-comparison}
+track_a <- calculate_track_balance(config_a)
+track_b <- calculate_track_balance(config_b)
+
+comparison_tracks <- bind_rows(
+  track_a %>% mutate(config = "Config A"),
+  track_b %>% mutate(config = "Config B")
+)
+
+comparison_tracks %>%
+  ggplot(aes(x = win_track, y = win_rate, fill = config)) +
+  geom_col(position = "dodge", alpha = 0.7) +
+  geom_hline(yintercept = 1/3, color = "red", linetype = "dashed") +
+  labs(
+    title = "Victory Track Win Rates - Comparison",
+    x = "Track",
+    y = "Win Rate",
+    fill = "Configuration"
+  ) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  theme_minimal()
+```
+
+# Summary
+
+```{r summary-table}
+summary_comparison <- data.frame(
+  Metric = c("Mean Rounds", "Track Balance (p-value)", "Completion Rate"),
+  Config_A = c(
+    round(mean(config_a$rounds[config_a$completed]), 2),
+    round(test_track_balance(config_a)$p_value, 4),
+    round(mean(config_a$completed), 3)
+  ),
+  Config_B = c(
+    round(mean(config_b$rounds[config_b$completed]), 2),
+    round(test_track_balance(config_b)$p_value, 4),
+    round(mean(config_b$completed), 3)
+  )
+)
+
+kable(summary_comparison, caption = "Configuration Comparison Summary") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+**Recommendation:** Choose configuration that:
+- Has game length closest to 7-8 rounds
+- Has most balanced track distribution (p-value closest to 1.0)
+- Has highest completion rate

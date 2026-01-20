@@ -20,10 +20,8 @@ export class GameControls {
                 startBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Start game button clicked');
                     this.handleStartGame();
                 });
-                console.log('Start game button listener attached');
                 return true;
             }
             return false;
@@ -71,7 +69,6 @@ export class GameControls {
      * Handle start game button
      */
     handleStartGame() {
-        console.log('handleStartGame called');
         try {
             const playerCountSelect = document.getElementById('player-count');
             if (!playerCountSelect) {
@@ -81,7 +78,6 @@ export class GameControls {
             }
             
             const playerCount = parseInt(playerCountSelect.value);
-            console.log(`Starting game with ${playerCount} players`);
             const players = [];
             
             // Get player configurations
@@ -93,7 +89,6 @@ export class GameControls {
                 const name = playerNameInput ? playerNameInput.value || `Player ${i + 1}` : `Player ${i + 1}`;
                 
                 players.push({ name, isAI });
-                console.log(`Player ${i + 1}: ${name} (${isAI ? 'AI' : 'Human'})`);
             }
             
             if (players.length === 0) {
@@ -102,7 +97,6 @@ export class GameControls {
                 return;
             }
             
-            console.log('Calling uiManager.startGame with players:', players);
             this.uiManager.startGame(players);
         } catch (error) {
             console.error('Error in handleStartGame:', error);
@@ -139,16 +133,21 @@ export class GameControls {
      */
     handleAction(action) {
         const result = this.gameEngine.executeAction(action);
-        
+
         if (result.success) {
+            // Log action to action log
+            const state = this.gameEngine.getState();
+            const player = state.currentPlayer;
+            const message = this.formatActionMessage(action, player);
+            this.uiManager.logAction(message, 'success', player.id);
+            
             if (result.gameOver) {
                 this.uiManager.showGameEnd(result.winner);
             } else {
                 this.gameEngine.endTurn();
                 this.uiManager.updateDisplay();
-                
+
                 // Check if next player is AI
-                const state = this.gameEngine.getState();
                 const currentPlayer = this.gameEngine.state.getCurrentPlayer();
                 if (currentPlayer && currentPlayer.isAI) {
                     this.uiManager.handleAITurn();
@@ -156,6 +155,25 @@ export class GameControls {
             }
         } else {
             this.uiManager.showError(result.error);
+            // Log error action
+            const state = this.gameEngine.getState();
+            const player = state.currentPlayer;
+            this.uiManager.logAction(`Failed: ${result.error}`, 'error', player ? player.id : null);
+        }
+    }
+
+    formatActionMessage(action, player) {
+        switch (action.type) {
+            case 'bid':
+                return `${player.name} bid ${action.coins} coins on ${action.actId}`;
+            case 'placeWorker':
+                return `${player.name} placed a worker at ${action.locationId}`;
+            case 'buyResource':
+                return `${player.name} bought ${action.resourceType}`;
+            case 'pass':
+                return `${player.name} passed`;
+            default:
+                return `${player.name} took an action`;
         }
     }
 

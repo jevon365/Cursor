@@ -1,0 +1,63 @@
+{
+  "metadata": {
+    "testRun": "baseline-2024-01-15",
+    "date": "2024-01-15",
+    "configVersion": "v1.0",
+    "description": "Initial balance test before any changes",
+    "playerCount": 2,
+    "difficulty": "medium",
+    "gameCount": 100,
+    "notes": "Establishing baseline metrics for comparison"
+  },
+  "results": [
+    {
+      "gameId": 1,
+      "playerCount": 2,
+      "difficulty": "medium",
+      "winner": "AI Player 1",
+      "winTrack": "empire",
+      "rounds": 8,
+      "duration": 1234,
+      "completed": true,
+      "finalScores": [
+        {
+          "name": "AI Player 1",
+          "empire": 15,
+          "population": 8,
+          "church": 5,
+          "total": 28,
+          "coins": 12,
+          "resources": {
+            "mummers": 3,
+            "animals": 2,
+            "slaves": 1,
+            "prisoners": 0
+          }
+        },
+        {
+          "name": "AI Player 2",
+          "empire": 8,
+          "population": 12,
+          "church": 4,
+          "total": 24,
+          "coins": 8,
+          "resources": {
+            "mummers": 2,
+            "animals": 1,
+            "slaves": 3,
+            "prisoners": 0
+          }
+        }
+      ]
+    }
+  ],
+  "statistics": {
+    "totalGames": 1,
+    "completedGames": 1,
+    "averageRounds": 8,
+    "averageDuration": 1234,
+    "winDistribution": {
+      "AI Player 1": 1
+    }
+  }
+}

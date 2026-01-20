@@ -1,5 +1,18 @@
 /* Circus Maximus - Warm Roman Theme Styles */
 
+/* Import layout styles */
+@import url('layout.css');
+@import url('player-panels.css');
+@import url('victory-tracks.css');
+@import url('markets-panel.css');
+@import url('city-backdrop.css');
+@import url('round-info.css');
+@import url('phase-action.css');
+@import url('action-log.css');
+@import url('bidding-popup.css');
+/* DIAGNOSTICS: Uncomment the line below to enable visual layer debugging */
+/* @import url('diagnostics.css'); */
+
 /* CSS Variables - Warm Roman Theme */
 :root {
     /* Colors - Warm Roman Theme */
@@ -60,6 +73,12 @@
     box-sizing: border-box;
 }
 
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: visible; /* Allow content to be visible */
+}
+
 /* Base Styles */
 body {
     font-family: var(--font-family);
@@ -67,6 +86,7 @@ body {
     color: var(--color-text);
     line-height: 1.6;
     font-size: var(--font-size-base);
+    position: relative;
 }
 
 #app {
@@ -76,6 +96,23 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    position: relative;
+}
+
+/* When game-play is active, allow full viewport */
+#app.game-play-active {
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+/* Fallback for :has() selector (modern browsers) */
+@supports selector(:has(*)) {
+    #app:has(#game-play.active) {
+        max-width: 100%;
+        padding: 0;
+        margin: 0;
+    }
 }
 
 /* Header */
@@ -108,21 +145,107 @@ main {
     padding: var(--spacing-xl);
     box-shadow: var(--shadow-md);
     border: var(--border-width) solid var(--color-border);
+    position: relative;
+}
+
+/* When game-play screen is active, remove main padding to allow full-screen layout */
+/* Use class-based approach for better browser compatibility */
+main.game-play-active {
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+}
+
+/* Fallback for :has() selector (modern browsers) */
+@supports selector(:has(*)) {
+    main:has(#game-play.active) {
+        padding: 0;
+        border-radius: 0;
+        box-shadow: none;
+        border: none;
+    }
+}
+
+/* Game Container Layout - Override main padding for game play */
+#game-play {
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    overflow: visible;
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+#game-container-layout {
+    /* Layout styles are in layout.css */
+    /* Ensure it's on top of other content */
+    z-index: 1;
+}
+
+/* When game-play is active, ensure it takes full viewport */
+#game-play.active {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1000;
 }
 
 /* Screen Management */
 .screen {
-    display: none;
+    display: none !important;
 }
 
 .screen.active {
-    display: block;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Explicit styling for setup screen */
+#game-setup {
+    display: none;
+}
+
+#game-setup.active {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Ensure setup screen is visible on initial load */
+#game-setup.screen.active {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative;
+    z-index: 1;
 }
 
 /* Setup Screen */
+#game-setup {
+    padding: var(--spacing-xl);
+    text-align: center;
+}
+
+#game-setup h2 {
+    font-size: 2em;
+    color: var(--color-empire);
+    margin-bottom: var(--spacing-lg);
+}
+
 .setup-options {
-    max-width: 400px;
+    max-width: 500px;
     margin: 0 auto;
+    background: var(--color-highlight);
+    padding: var(--spacing-xl);
+    border-radius: var(--border-radius);
+    border: var(--border-width) solid var(--color-border);
+    box-shadow: var(--shadow-md);
 }
 
 .setup-options label {
@@ -130,6 +253,12 @@ main {
     margin-bottom: var(--spacing-md);
     font-weight: var(--font-weight-semibold);
     color: var(--color-text);
+    font-size: 1.1em;
+}
+
+.setup-options #player-count {
+    margin-top: var(--spacing-sm);
+    font-size: 1em;
 }
 
 .setup-options select {
@@ -143,6 +272,8 @@ main {
     background: var(--color-highlight);
     color: var(--color-text);
     transition: border-color 0.2s;
+    position: relative;
+    z-index: 250; /* Above panels - dropdown options will be above backdrop */
 }
 
 .setup-options select:focus {
@@ -154,6 +285,44 @@ main {
 
 #player-config {
     margin: var(--spacing-lg) 0;
+    text-align: left;
+}
+
+#player-config .player-type {
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--color-card);
+    border-radius: var(--border-radius-small);
+    border: var(--border-width) solid var(--color-border);
+}
+
+#player-config .player-type label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: 0;
+}
+
+#player-config .player-type select {
+    flex: 1;
+    margin-top: 0;
+    position: relative;
+    z-index: 250; /* Above panels - dropdown options will be above backdrop */
+}
+
+#player-config .player-type input[type="text"] {
+    flex: 1;
+    margin-left: var(--spacing-sm);
+}
+
+/* Start game button styling */
+#start-game-btn {
+    margin-top: var(--spacing-xl);
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-size: 1.2em;
+    font-weight: var(--font-weight-bold);
+    width: 100%;
+    max-width: 300px;
 }
 
 .player-type {
@@ -180,20 +349,21 @@ button {
     color: var(--color-highlight);
     border: var(--border-width) solid var(--color-accent);
     padding: 12px 24px;
+    min-height: 44px; /* Touch-friendly minimum height */
     border-radius: var(--border-radius-small);
     font-size: 1em;
     font-family: var(--font-family);
     font-weight: var(--font-weight-semibold);
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-md);
 }
 
 button:hover {
     background: var(--color-primary-dark);
     border-color: var(--color-accent);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
+    transform: translateY(-2px); /* More pronounced lift */
+    box-shadow: var(--shadow-lg);
 }
 
 button:active {
@@ -217,8 +387,11 @@ button:disabled:hover {
 }
 
 button:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
+    outline: 3px solid var(--color-primary);
+    outline-offset: 3px; /* More visible focus indicator */
+    box-shadow: 
+        var(--shadow-md),
+        0 0 0 3px rgba(139, 0, 0, 0.2); /* Additional focus glow */
 }
 
 button.danger {
@@ -300,7 +473,8 @@ footer button:hover {
 }
 
 .action-btn {
-    padding: 15px;
+    padding: 15px 24px;
+    min-height: 44px; /* Touch-friendly minimum height */
     background: var(--color-card);
     border: var(--border-width) solid var(--color-primary);
     border-radius: var(--border-radius-small);
@@ -310,13 +484,15 @@ footer button:hover {
     font-family: var(--font-family);
     font-weight: var(--font-weight-semibold);
     color: var(--color-text);
+    box-shadow: var(--shadow-sm);
 }
 
 .action-btn:hover {
     background: var(--color-primary);
     color: var(--color-highlight);
     transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--color-primary-dark);
 }
 
 .action-btn:disabled {
@@ -325,12 +501,16 @@ footer button:hover {
     cursor: not-allowed;
     opacity: 0.6;
     background: var(--color-highlight);
+    box-shadow: none;
+    transform: none;
 }
 
 .action-btn:disabled:hover {
     background: var(--color-highlight);
     transform: none;
     color: var(--color-text-secondary);
+    box-shadow: none;
+    border-color: #D2B48C;
 }
 
 /* Player Info */
@@ -488,13 +668,8 @@ footer button:hover {
     margin: var(--spacing-lg) 0;
 }
 
-.track-container {
-    background: var(--color-highlight);
-    border: var(--border-width) solid var(--color-border);
-    border-radius: var(--border-radius);
-    padding: var(--spacing-md);
-    font-family: var(--font-family);
-}
+/* Legacy track-container style - now handled by victory-tracks.css */
+/* Removed to prevent conflicts with new component-based styling */
 
 .track-label {
     font-weight: var(--font-weight-bold);
@@ -928,6 +1103,8 @@ input[type="number"] {
     background: var(--color-highlight);
     color: var(--color-text);
     transition: border-color 0.2s;
+    position: relative;
+    z-index: 250; /* Above panels when focused */
 }
 
 input[type="text"]:focus,

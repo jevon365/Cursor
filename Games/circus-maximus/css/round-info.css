@@ -1,0 +1,284 @@
+/* Round Info Panel CSS - Bottom Panel */
+
+.round-info-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 0; /* Padding handled by layout.css */
+    overflow: visible; /* No scrolling - show all content */
+    box-sizing: border-box;
+}
+
+/* Content container - hidden when retracted */
+.round-info-content {
+    opacity: 0; /* Hidden by default when retracted */
+    overflow: hidden;
+    transition: opacity 0.3s ease;
+    flex: 1;
+}
+
+/* Show content when panel is hovered */
+.round-info-panel:hover .round-info-content {
+    opacity: 1;
+}
+
+.round-info-bidding {
+    width: 100%;
+    min-width: min-content; /* Allow content to expand horizontally */
+    box-sizing: border-box;
+}
+
+.round-info-bidding h3 {
+    font-weight: 700;
+    color: var(--color-text, #2C1810);
+    margin-bottom: 16px;
+    font-size: 1.2em;
+    font-family: var(--font-family, 'Times New Roman', serif);
+}
+
+.acts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Fit all cards, wrap if needed */
+    gap: 12px;
+    margin-bottom: 16px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.act-card {
+    background: rgba(253, 245, 230, 0.7); /* Same opacity as player panels - ivory/cream background */
+    border: 2px solid rgba(205, 133, 63, 0.4); /* Semi-transparent border */
+    border-radius: 6px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: var(--font-family, 'Times New Roman', serif);
+}
+
+/* More opaque on hover for readability and interaction */
+.act-card:hover {
+    background: rgba(253, 245, 230, 0.85); /* More opaque on hover - same as player panels */
+    border-color: var(--color-primary, #8B0000);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+    transform: translateY(-2px);
+}
+
+.act-card.selected {
+    border-color: rgba(139, 0, 0, 0.8);
+    border-width: 3px;
+    background: rgba(253, 245, 230, 0.75); /* Slightly more opaque for selected - same as current player panel */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+}
+
+.act-card-title {
+    font-weight: 700;
+    color: var(--color-text, #2C1810);
+    margin-bottom: 8px;
+    font-size: 1.1em;
+}
+
+.act-card-details {
+    font-size: 0.9em;
+    color: var(--color-text-secondary, #6B4423);
+    line-height: 1.5;
+}
+
+.act-card-details > div {
+    margin: 4px 0;
+}
+
+.act-bids {
+    margin-top: 8px;
+    font-weight: 600;
+    color: var(--color-primary, #8B0000);
+}
+
+.bid-input-section {
+    padding: 16px;
+    background: rgba(253, 245, 230, 0.7); /* Same opacity as player panels - ivory/cream background */
+    border: 2px solid rgba(139, 0, 0, 0.7);
+    border-radius: 6px;
+    margin-top: 16px;
+}
+
+.bid-input-section h4 {
+    font-weight: 700;
+    color: var(--color-primary, #8B0000);
+    margin-bottom: 12px;
+    font-family: var(--font-family, 'Times New Roman', serif);
+}
+
+.bid-input {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.bid-input label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-family: var(--font-family, 'Times New Roman', serif);
+}
+
+.bid-input input {
+    padding: 8px 12px;
+    border: 2px solid var(--color-border, #CD853F);
+    border-radius: 4px;
+    font-size: 1em;
+    font-family: var(--font-family, 'Times New Roman', serif);
+    width: 100px;
+    position: relative;
+    z-index: 250; /* Above panels when focused */
+}
+
+.coins-available {
+    font-size: 0.9em;
+    color: var(--color-text-secondary, #6B4423);
+    font-style: italic;
+}
+
+.round-info-other {
+    display: flex;
+    flex-wrap: wrap; /* Wrap items if needed */
+    gap: 16px;
+    width: 100%;
+    overflow: visible; /* No scrolling - show all content */
+    box-sizing: border-box;
+}
+
+.info-section {
+    flex: 1 1 auto; /* Allow flex items to shrink and grow */
+    min-width: 250px;
+    max-width: 100%; /* Prevent overflow */
+    background: rgba(253, 245, 230, 0.7); /* Same opacity as player panels - ivory/cream background */
+    border: 2px solid rgba(205, 133, 63, 0.4); /* Semi-transparent border */
+    border-radius: 6px;
+    padding: 12px;
+    font-family: var(--font-family, 'Times New Roman', serif);
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+/* More opaque on hover for readability */
+.info-section:hover {
+    background: rgba(253, 245, 230, 0.85); /* More opaque on hover - same as player panels */
+    border-color: rgba(205, 133, 63, 0.6);
+}
+
+.info-section h3 {
+    font-weight: 700;
+    color: var(--color-text, #2C1810);
+    margin-bottom: 8px;
+    font-size: 1.1em;
+}
+
+.info-section.event-card {
+    border-color: rgba(255, 152, 0, 0.7);
+    background: rgba(253, 245, 230, 0.7); /* Same opacity as player panels */
+}
+
+.info-section.execution-act {
+    border-color: rgba(198, 40, 40, 0.7);
+    background: rgba(253, 245, 230, 0.7); /* Same opacity as player panels */
+}
+
+.acts-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.act-mini-card {
+    background: rgba(253, 245, 230, 0.7); /* Same opacity as player panels - ivory/cream background */
+    border: 1px solid rgba(205, 133, 63, 0.5);
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 0.875em;
+}
+
+.mini-act-name {
+    font-weight: 600;
+    color: var(--color-text, #2C1810);
+    margin-bottom: 4px;
+}
+
+.mini-act-details {
+    color: var(--color-text-secondary, #6B4423);
+    font-size: 0.9em;
+}
+
+/* Scrollbar styling for round-info-panel */
+.round-info-panel::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+}
+
+.round-info-panel::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.05);
+    border-radius: 4px;
+}
+
+.round-info-panel::-webkit-scrollbar-thumb {
+    background: var(--color-border, #CD853F);
+    border-radius: 4px;
+}
+
+.round-info-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--color-accent, #8B4513);
+}
+
+/* Retracted state indicator */
+.round-info-panel::before {
+    content: 'R';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.2em;
+    font-weight: 700;
+    color: var(--color-text, #2C1810);
+    text-shadow: 
+        1px 1px 3px rgba(0, 0, 0, 0.9),
+        -1px -1px 2px rgba(255, 255, 255, 0.3),
+        0 0 4px rgba(0, 0, 0, 0.5);
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 10;
+    white-space: nowrap;
+}
+
+/* Hide indicator when expanded */
+.round-info-panel:hover::before {
+    opacity: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1199px) {
+    .acts-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 10px;
+    }
+    
+    .info-section {
+        min-width: 200px;
+    }
+}
+
+@media (max-width: 767px) {
+    .round-info-other {
+        flex-direction: column;
+    }
+    
+    .acts-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .info-section {
+        min-width: 100%;
+    }
+}

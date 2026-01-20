@@ -1,0 +1,3 @@
+# Exported CSV files can be regenerated from raw JSON
+# Don't commit these to reduce repository size
+*.csv

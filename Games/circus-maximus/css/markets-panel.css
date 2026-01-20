@@ -1,0 +1,422 @@
+/* Markets Panel CSS - Vertical Bar Style (Similar to Victory Tracks) */
+
+.markets-container {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 2px !important; /* Match victory tracks gap */
+    padding: 0 !important;
+    justify-content: space-around !important;
+    align-items: stretch !important;
+    height: 100% !important; /* Fill available height */
+    min-height: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    opacity: 1 !important; /* Match player panels - always visible, individual containers handle opacity */
+    overflow: visible !important; /* Allow content to be visible - prevent clipping */
+    transition: opacity 0.3s ease !important;
+    flex: 1 !important; /* Take available space */
+}
+
+/* Keep hover state for consistency (no opacity change needed) */
+.markets-panel:hover .markets-container {
+    opacity: 1;
+}
+
+/* Retracted state indicator */
+.markets-panel::before {
+    content: 'M';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-90deg);
+    font-size: 1.2em;
+    font-weight: 700;
+    color: var(--color-text, #2C1810);
+    text-shadow: 
+        1px 1px 3px rgba(0, 0, 0, 0.9),
+        -1px -1px 2px rgba(255, 255, 255, 0.3),
+        0 0 4px rgba(0, 0, 0, 0.5);
+    opacity: 1;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 10;
+    white-space: nowrap;
+}
+
+/* Hide indicator when expanded */
+.markets-panel:hover::before {
+    opacity: 0;
+}
+
+.market-container {
+    background: rgba(253, 245, 230, 0.7) !important; /* Match player panel default opacity */
+    border: 1px solid rgba(205, 133, 63, 0.4) !important; /* Subtle border matching tracks */
+    padding: 4px 8px !important; /* Add padding for content spacing */
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important; /* Constrain to available height */
+    border-radius: 6px !important; /* Rounded corners matching track containers */
+}
+
+.market-container.current-market {
+    background: rgba(253, 245, 230, 0.75) !important; /* Match player panel current player opacity */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important; /* Subtle shadow for depth */
+}
+
+.market-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px; /* Reduced gap from 4px to 2px */
+    margin-bottom: 2px; /* Reduced margin from 4px to 2px */
+    width: 100%;
+    flex-shrink: 0;
+    padding-bottom: 2px; /* Reduced padding from 4px to 2px */
+}
+
+.market-icon {
+    font-size: 24px; /* Reduced from 28px to 24px */
+    line-height: 1;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.market-title {
+    font-weight: 700;
+    font-size: 0.95em; /* Reduced from 1.1em to 0.95em */
+    font-family: var(--font-family, 'Times New Roman', serif);
+    text-shadow: 
+        2px 2px 4px rgba(0, 0, 0, 1),
+        -1px -1px 2px rgba(255, 255, 255, 0.8),
+        0 0 6px rgba(0, 0, 0, 0.8);
+    text-align: center;
+    white-space: nowrap;
+    color: var(--color-text, #2C1810) !important; /* Fully opaque for better legibility */
+    line-height: 1.1; /* Reduced from 1.2 to 1.1 */
+}
+
+.market-price {
+    font-size: 0.75em;
+    font-weight: 600;
+    font-family: var(--font-family, 'Times New Roman', serif);
+    text-shadow: 
+        1px 1px 3px rgba(0, 0, 0, 0.9),
+        -1px -1px 2px rgba(255, 255, 255, 0.8),
+        0 0 4px rgba(0, 0, 0, 0.7);
+    color: rgba(44, 24, 16, 1) !important; /* Fully opaque for better legibility */
+}
+
+.market-price-label {
+    display: none; /* Hidden by default when panel is not expanded */
+}
+
+/* Show "coins" text when markets panel is expanded (hovered) */
+.markets-panel:hover .market-price-label {
+    display: inline;
+}
+
+.market-bar-wrapper {
+    position: relative;
+    margin: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    min-height: 0;
+    background: transparent;
+    padding: 0 8px;
+    justify-content: space-between;
+}
+
+.market-bar {
+    position: relative !important;
+    width: 24px !important;
+    flex: 1 !important;
+    min-height: 0 !important; /* Removed fixed min-height - let flex handle it */
+    max-height: 100% !important; /* Constrain to available space */
+    border: 2px solid rgba(205, 133, 63, 0.6) !important; /* Match track bar border */
+    border-radius: 12px !important; /* Fully rounded like track bars (pill-shaped) */
+    background: transparent !important; /* Fully transparent */
+    background-image: none !important;
+    box-shadow: none !important; /* Remove shadows for transparency */
+    overflow: visible !important;
+}
+
+.market-fill {
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: linear-gradient(
+        to top,
+        rgba(139, 0, 0, 0.5) 0%,
+        rgba(139, 0, 0, 0.3) 50%,
+        rgba(139, 0, 0, 0.2) 100%
+    ) !important;
+    border-radius: 0 0 12px 12px !important; /* Match bar border-radius for fully rounded bottom */
+    transition: height 0.3s ease !important;
+    pointer-events: none !important;
+    z-index: 1 !important;
+}
+
+
+.market-queue-marker {
+    position: absolute;
+    transform: translateX(-50%) translateY(-50%);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid white !important;
+    box-shadow: 
+        0 2px 6px rgba(0,0,0,0.4),
+        0 0 0 1px rgba(0,0,0,0.1);
+    z-index: 10; /* Above fill (z-index: 1) */
+    transition: bottom 0.3s ease, transform 0.2s ease, opacity 0.2s ease, left 0.2s ease;
+    cursor: pointer;
+    opacity: 1;
+    min-width: 18px;
+    min-height: 18px;
+    max-width: 18px;
+    max-height: 18px;
+}
+
+.market-queue-marker.current-buyer {
+    border: 3px solid rgba(139, 0, 0, 0.8) !important;
+    box-shadow: 
+        0 2px 8px rgba(0,0,0,0.5),
+        0 0 0 2px rgba(139, 0, 0, 0.5),
+        0 0 8px rgba(139, 0, 0, 0.6);
+    z-index: 11;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: translateX(-50%) translateY(-50%) scale(1);
+    }
+    50% {
+        transform: translateX(-50%) translateY(-50%) scale(1.1);
+    }
+}
+
+.market-queue-marker:hover {
+    transform: translateX(-50%) translateY(-50%) scale(1.3);
+    z-index: 12;
+    opacity: 0.9;
+    filter: brightness(1.1);
+}
+
+/* When a marker is hovered, make non-hovered markers more visible */
+.market-bar:hover .market-queue-marker:not(:hover) {
+    opacity: 0.95;
+    z-index: 11;
+}
+
+/* When hovering over the market bar, slightly increase visibility of all markers */
+.market-bar:hover .market-queue-marker {
+    box-shadow: 
+        0 2px 8px rgba(0,0,0,0.5),
+        0 0 0 2px rgba(255,255,255,0.3);
+}
+
+.market-stock-count {
+    font-size: 0.85em;
+    font-family: var(--font-family, 'Times New Roman', serif);
+    font-weight: 700;
+    text-shadow: 
+        2px 2px 4px rgba(0, 0, 0, 1),
+        -1px -1px 2px rgba(255, 255, 255, 0.9),
+        0 0 6px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+    background: transparent;
+    flex-shrink: 0;
+    line-height: 1;
+    padding: 4px 0;
+    margin-bottom: 4px;
+    color: var(--color-primary, #8B0000) !important; /* Fully opaque for better legibility */
+}
+
+.market-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px; /* Reduced gap from 6px to 4px */
+    margin-top: 2px; /* Reduced margin from 4px to 2px */
+    width: 100%;
+    flex-shrink: 0;
+    padding-top: 2px; /* Reduced padding from 4px to 2px */
+}
+
+.market-purchase-btn {
+    background: var(--color-primary, #8B0000);
+    color: var(--color-highlight, #FFF8DC);
+    border: 2px solid var(--color-accent, #8B4513);
+    padding: 6px 12px; /* Reduced padding from 8px 16px to 6px 12px */
+    border-radius: 4px;
+    font-size: 0.8em; /* Reduced from 0.85em to 0.8em */
+    font-family: var(--font-family, 'Times New Roman', serif);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    min-height: 32px; /* Reduced from 36px to 32px */
+}
+
+.market-purchase-btn:hover:not(.disabled) {
+    background: var(--color-primary-dark, #A00000);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.market-purchase-btn:active:not(.disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.market-purchase-btn.disabled {
+    background: var(--color-border, #CD853F);
+    color: var(--color-text-secondary, #6B4423);
+    cursor: not-allowed;
+    opacity: 0.7;
+    box-shadow: none;
+}
+
+.restock-info {
+    font-size: 0.75em;
+    cursor: help;
+    color: var(--color-text, #2C1810);
+    transition: transform 0.2s ease;
+    font-family: var(--font-family, 'Times New Roman', serif);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.restock-info:hover {
+    transform: scale(1.2);
+}
+
+.market-tooltip {
+    position: fixed;
+    background: rgba(44, 24, 16, 0.95);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.875em;
+    pointer-events: none;
+    z-index: 10000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    font-family: var(--font-family, 'Times New Roman', serif);
+    max-width: 200px;
+    word-wrap: break-word;
+}
+
+/* Mobile tooltip adjustments */
+@media (max-width: 767px) {
+    .market-tooltip {
+        max-width: calc(100vw - 20px);
+        font-size: 0.8em;
+        padding: 10px 14px;
+    }
+}
+
+.market-bar-tooltip {
+    position: fixed;
+    background: rgba(44, 24, 16, 0.95);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 0.875em;
+    pointer-events: none;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    font-family: var(--font-family, 'Times New Roman', serif);
+    min-width: 150px;
+    text-align: center;
+    white-space: nowrap;
+    transition: opacity 0.2s ease;
+}
+
+.market-bar-tooltip strong {
+    color: var(--color-highlight, #FFF8DC);
+    font-weight: 700;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-100%) translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-100%) translateY(0);
+    }
+}
+
+/* Highlight current market */
+.market-container.current-market .market-bar {
+    border-color: rgba(139, 0, 0, 0.8);
+    box-shadow: 
+        inset 2px 0 4px rgba(0,0,0,0.15),
+        0 1px 2px rgba(0,0,0,0.1),
+        0 0 8px rgba(139, 0, 0, 0.3);
+}
+
+.market-container.current-market .market-title {
+    color: var(--color-primary, #8B0000);
+    text-shadow: 
+        1px 1px 3px rgba(0, 0, 0, 0.9),
+        -1px -1px 2px rgba(255, 255, 255, 0.3),
+        0 0 6px rgba(139, 0, 0, 0.6);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1199px) {
+    .market-bar {
+        width: 22px;
+        min-height: 250px;
+    }
+    
+    .market-queue-marker {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .market-icon {
+        font-size: 24px;
+    }
+}
+
+@media (max-width: 767px) {
+    .markets-container {
+        flex-direction: column;
+        gap: 20px;
+        height: auto;
+        opacity: 1 !important; /* Always visible on mobile when panel is expanded */
+    }
+    
+    .market-container {
+        width: 100%;
+        height: auto;
+        min-height: 300px;
+    }
+    
+    .market-bar {
+        width: 20px;
+        min-height: 250px;
+    }
+    
+    .market-queue-marker {
+        width: 14px;
+        height: 14px;
+    }
+    
+    .market-icon {
+        font-size: 20px;
+    }
+}

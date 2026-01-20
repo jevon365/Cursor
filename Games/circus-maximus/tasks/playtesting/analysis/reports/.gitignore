@@ -1,0 +1,4 @@
+# Generated reports can be regenerated
+# Don't commit HTML/PDF reports
+*.html
+*.pdf

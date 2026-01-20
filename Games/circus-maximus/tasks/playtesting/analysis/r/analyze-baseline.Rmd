@@ -1,0 +1,247 @@
+---
+title: "Circus Maximus - Baseline Playtest Analysis"
+author: "Playtesting Report"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+    theme: flatly
+    highlight: tango
+  pdf_document:
+    toc: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 10,
+  fig.height = 6
+)
+
+# Load libraries
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+
+# Source data loading functions
+source("load-data.R")
+```
+
+# Executive Summary
+
+This report analyzes the baseline playtest results to establish current game balance and identify areas for improvement.
+
+```{r load-data}
+# Load data (update path as needed)
+df <- load_playtest_csv("../../data/exports/baseline.csv")
+# Or from JSON:
+# df <- load_playtest_json("../../data/raw/baseline/baseline-2024-01-15-100games-2players.json")
+
+cat("Total games:", nrow(df), "\n")
+cat("Completed games:", sum(df$completed), "\n")
+cat("Completion rate:", round(mean(df$completed) * 100, 1), "%\n")
+```
+
+# Game Length Analysis
+
+## Distribution of Game Length
+
+```{r game-length-stats}
+round_stats <- df %>%
+  filter(completed == TRUE) %>%
+  summarise(
+    mean = mean(rounds),
+    median = median(rounds),
+    sd = sd(rounds),
+    min = min(rounds),
+    max = max(rounds),
+    q25 = quantile(rounds, 0.25),
+    q75 = quantile(rounds, 0.75)
+  )
+
+kable(round_stats, digits = 2, caption = "Game Length Statistics (Rounds)") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+```{r game-length-viz}
+df %>%
+  filter(completed == TRUE) %>%
+  ggplot(aes(x = rounds)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", alpha = 0.7, color = "white") +
+  geom_vline(aes(xintercept = mean(rounds)), color = "red", linetype = "dashed", size = 1) +
+  geom_vline(aes(xintercept = median(rounds)), color = "darkgreen", linetype = "dashed", size = 1) +
+  labs(
+    title = "Game Length Distribution",
+    subtitle = paste("Mean =", round(mean(df$rounds[df$completed]), 1), "rounds | Median =", median(df$rounds[df$completed]), "rounds"),
+    x = "Number of Rounds",
+    y = "Frequency",
+    caption = "Red line = Mean, Green line = Median"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 16, face = "bold"))
+```
+
+**Interpretation:**
+- Target game length: 6-10 rounds
+- Current mean: `r round(round_stats$mean, 1)` rounds
+- **Verdict:** `r if(round_stats$mean < 6) {"Too short - consider increasing costs"} else if(round_stats$mean > 10) {"Too long - consider decreasing costs"} else {"Within acceptable range"}`
+
+# Victory Track Balance
+
+## Win Distribution by Track
+
+```{r track-wins}
+track_wins <- df %>%
+  filter(completed == TRUE, !is.na(win_track)) %>%
+  count(win_track, name = "wins") %>%
+  mutate(
+    win_rate = wins / sum(wins),
+    expected_rate = 1/3,  # Expected 33.3% for balanced game
+    difference = win_rate - expected_rate
+  ) %>%
+  arrange(desc(win_rate))
+
+kable(track_wins, digits = 3, caption = "Victory Track Win Rates") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  add_header_above(c(" " = 1, "Observed" = 2, "Expected" = 1, "Difference" = 1))
+```
+
+```{r track-wins-viz}
+track_wins %>%
+  ggplot(aes(x = reorder(win_track, win_rate), y = win_rate)) +
+  geom_col(fill = "steelblue", alpha = 0.7) +
+  geom_hline(yintercept = 1/3, color = "red", linetype = "dashed", size = 1) +
+  geom_text(aes(label = paste0(round(win_rate * 100, 1), "%")), 
+            hjust = -0.1, size = 4) +
+  coord_flip() +
+  labs(
+    title = "Victory Track Win Rates",
+    subtitle = "Red line shows expected 33.3% for balanced game",
+    x = "Victory Track",
+    y = "Win Rate",
+    caption = paste("Total games:", sum(track_wins$wins))
+  ) +
+  scale_y_continuous(labels = scales::percent_format(), limits = c(0, max(0.5, max(track_wins$win_rate) * 1.1))) +
+  theme_minimal()
+```
+
+**Interpretation:**
+- Target: Each track should win ~33.3% of games (within ±10%)
+- Largest imbalance: `r track_wins$win_track[1]` track wins `r round(track_wins$win_rate[1] * 100, 1)`% of games
+- **Verdict:** `r if(abs(track_wins$difference[1]) > 0.1) {paste0("IMBALANCED - ", track_wins$win_track[1], " track is too strong/weak")} else {"Acceptably balanced"}`
+
+## Statistical Test for Track Balance
+
+```{r track-balance-test}
+# Chi-square test for equal distribution
+observed <- track_wins$wins
+expected <- rep(sum(observed) / 3, 3)
+chisq_result <- chisq.test(observed, p = rep(1/3, 3))
+
+cat("Chi-square test for equal track distribution:\n")
+cat("  Chi-square =", round(chisq_result$statistic, 3), "\n")
+cat("  p-value =", format.pval(chisq_result$p.value, digits = 3), "\n")
+cat("  Result:", if(chisq_result$p.value < 0.05) "IMBALANCED (p < 0.05)" else "No significant imbalance detected\n")
+```
+
+# Player Score Analysis
+
+## Final Score Distribution
+
+```{r player-scores}
+df_long <- wide_to_long(df)
+
+score_stats <- df_long %>%
+  filter(completed == TRUE) %>%
+  group_by(player_name) %>%
+  summarise(
+    mean_total = mean(total),
+    mean_empire = mean(empire),
+    mean_population = mean(population),
+    mean_church = mean(church),
+    win_rate = mean(won, na.rm = TRUE),
+    n_games = n()
+  ) %>%
+  arrange(desc(mean_total))
+
+kable(score_stats, digits = 2, caption = "Average Scores by Player") %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+```{r score-distribution}
+df_long %>%
+  filter(completed == TRUE) %>%
+  ggplot(aes(x = total, fill = win_track_final)) +
+  geom_histogram(binwidth = 2, alpha = 0.7, color = "white") +
+  facet_wrap(~win_track_final, ncol = 1) +
+  labs(
+    title = "Final Score Distribution by Winning Track",
+    x = "Total Track Score",
+    y = "Frequency",
+    fill = "Winning Track"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+# Confidence Intervals
+
+```{r confidence-intervals}
+# 95% confidence interval for mean game length
+n_completed <- sum(df$completed)
+mean_rounds <- mean(df$rounds[df$completed])
+sd_rounds <- sd(df$rounds[df$completed])
+se_rounds <- sd_rounds / sqrt(n_completed)
+ci_rounds <- mean_rounds + c(-1, 1) * qt(0.975, n_completed - 1) * se_rounds
+
+cat("Game Length - 95% Confidence Interval:\n")
+cat(sprintf("  Mean: %.2f rounds\n", mean_rounds))
+cat(sprintf("  95%% CI: [%.2f, %.2f] rounds\n", ci_rounds[1], ci_rounds[2]))
+```
+
+# Outlier Detection
+
+```{r outliers}
+# Identify outlier games (2+ standard deviations from mean)
+mean_rounds <- mean(df$rounds[df$completed])
+sd_rounds <- sd(df$rounds[df$completed])
+threshold <- 2 * sd_rounds
+
+outliers <- df %>%
+  filter(completed == TRUE) %>%
+  mutate(
+    z_score = abs(rounds - mean_rounds) / sd_rounds,
+    is_outlier = z_score > 2
+  ) %>%
+  filter(is_outlier) %>%
+  select(game_id, rounds, winner, win_track, z_score)
+
+if(nrow(outliers) > 0) {
+  cat("Outlier games (>2 SD from mean):\n")
+  kable(outliers, digits = 2) %>%
+    kable_styling(bootstrap_options = c("striped", "hover"))
+} else {
+  cat("No outliers detected (>2 SD from mean)\n")
+}
+```
+
+# Recommendations
+
+## Balance Issues Identified
+
+1. **Game Length:** `r if(round_stats$mean < 6) {"Games are too short. Consider increasing costs or victory threshold."} else if(round_stats$mean > 10) {"Games are too long. Consider decreasing costs or victory threshold."} else {"Game length is acceptable."}`
+
+2. **Track Balance:** `r if(abs(track_wins$difference[1]) > 0.1) {paste0(track_wins$win_track[1], " track is winning ", round(track_wins$win_rate[1] * 100, 1), "% of games. Adjust track advancement rates or act card rewards.")} else {"Tracks are acceptably balanced."}`
+
+3. **Completion Rate:** `r if(mean(df$completed) < 0.95) {paste0("Only ", round(mean(df$completed) * 100, 1), "% of games completed. Investigate infinite loop or max turn issues.")} else {"Most games completed successfully."}`
+
+---
+
+*Report generated on `r Sys.Date()`*

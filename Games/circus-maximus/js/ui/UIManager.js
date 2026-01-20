@@ -12,9 +12,19 @@ export class UIManager {
         this.display = new GameDisplay(gameEngine);
         this.controls = new GameControls(gameEngine, this);
         window.gameControls = this.controls; // For action button callbacks
+        window.uiManager = this; // For ActionPanel access
         
         // Track AI players
         this.aiPlayers = [];
+    }
+
+    /**
+     * Log an action to the action log
+     */
+    logAction(message, type = 'info', playerId = null) {
+        if (this.display && this.display.logAction) {
+            this.display.logAction(message, type, playerId);
+        }
     }
 
     /**
@@ -35,9 +45,23 @@ export class UIManager {
         
         // Switch to game play screen
         document.getElementById('game-setup').classList.remove('active');
-        document.getElementById('game-play').classList.add('active');
+        const gamePlayScreen = document.getElementById('game-play');
+        if (!gamePlayScreen) {
+            console.error('game-play screen not found!');
+            return;
+        }
+        gamePlayScreen.classList.add('active');
         
-        this.updateDisplay();
+        // Add class to main and app for CSS styling
+        const mainElement = document.querySelector('main');
+        const appElement = document.getElementById('app');
+        if (mainElement) mainElement.classList.add('game-play-active');
+        if (appElement) appElement.classList.add('game-play-active');
+        
+        // Use setTimeout to ensure DOM is updated before rendering
+        setTimeout(() => {
+            this.updateDisplay();
+        }, 0);
         
         // Check if first player is AI
         const currentPlayer = this.gameEngine.state.getCurrentPlayer();

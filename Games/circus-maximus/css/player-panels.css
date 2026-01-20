@@ -1,0 +1,197 @@
+/* Player Panels CSS - Top Bar Player Resource Display */
+
+.player-panels {
+    gap: 4px !important; /* Tight gap - panels very close together */
+    align-items: stretch;
+}
+
+.player-panel {
+    flex: 0 0 auto; /* Don't grow or shrink - fixed size */
+    width: 150px; /* Fixed width for each panel */
+    min-width: 120px; /* Smaller default size */
+    max-width: 150px; /* Prevent stretching */
+    padding: 8px 12px; /* Reduced padding */
+    background: rgba(253, 245, 230, 0.7); /* Ivory/cream background with transparency */
+    border: 2px solid transparent; /* Transparent border - only shows on hover */
+    border-radius: 6px;
+    margin: 0;
+    font-family: var(--font-family, 'Times New Roman', serif);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.player-panel:hover {
+    width: 200px; /* Expand width on hover */
+    min-width: 150px;
+    max-width: 200px; /* Allow expansion on hover */
+    padding: 12px 16px;
+    background: rgba(253, 245, 230, 0.85); /* More opaque on hover */
+    border-color: currentColor; /* Use player's text color for border */
+    z-index: 150; /* Bring hovered panel above other panels but below floating elements */
+}
+
+.player-panel.current-player {
+    border-width: 3px;
+    background: rgba(253, 245, 230, 0.75); /* Slightly more opaque for current player */
+    border-color: currentColor; /* Use player's text color */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+    /* Keep compact when not hovered */
+}
+
+.player-panel.current-player:hover {
+    transform: translateY(-2px); /* Only lift on hover, keep X alignment via margins */
+    background: rgba(253, 245, 230, 0.9); /* Even more opaque on hover */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Enhanced shadow on hover */
+}
+
+.player-name {
+    font-weight: 700;
+    margin-bottom: 0; /* No margin by default */
+    font-size: 1em; /* Slightly smaller */
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center text within panel */
+    gap: 8px;
+    transition: margin-bottom 0.3s ease;
+    text-shadow: 
+        1px 1px 3px rgba(0, 0, 0, 0.9),
+        -1px -1px 2px rgba(255, 255, 255, 0.3),
+        0 0 4px rgba(0, 0, 0, 0.5); /* Enhanced text shadow */
+}
+
+/* Position-based panel alignment - cluster panels toward center */
+.player-panel.panel-left {
+    margin-left: auto; /* Push right toward center - panel's right edge aligns to center */
+}
+
+.player-panel.panel-left-center {
+    margin-left: auto; /* Push right toward center */
+}
+
+.player-panel.panel-right {
+    margin-right: auto; /* Push left toward center - panel's left edge aligns to center */
+}
+
+.player-panel.panel-right-center {
+    margin-right: auto; /* Push left toward center */
+}
+
+.player-panel.panel-center {
+    margin-left: auto;
+    margin-right: auto; /* Keep centered */
+}
+
+/* Add margin on hover to make room for resources */
+.player-panel:hover .player-name {
+    margin-bottom: 8px;
+    font-size: 1.1em;
+}
+
+.ai-badge {
+    font-size: 0.75em;
+    background: rgba(0, 0, 0, 0.1);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 600;
+}
+
+.player-resources {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 0; /* Hidden by default */
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+}
+
+/* Show resources on hover */
+.player-panel:hover .player-resources {
+    max-height: 500px; /* Large enough to show all resources */
+    opacity: 1;
+    margin-top: 4px;
+}
+
+.resource-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+}
+
+/* Resource items centered within panels */
+.resource-item {
+    justify-content: center; /* Center resources within panel */
+}
+
+.resource-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1em;
+    flex-shrink: 0;
+}
+
+.resource-value {
+    font-weight: 600;
+    color: var(--color-text, #2C1810);
+    text-shadow: 
+        1px 1px 3px rgba(0, 0, 0, 0.9),
+        -1px -1px 2px rgba(255, 255, 255, 0.3),
+        0 0 4px rgba(0, 0, 0, 0.5); /* Enhanced text shadow for better readability */
+}
+
+/* Resource-specific styling */
+.resource-icon.coins {
+    color: var(--color-coins, #DAA520);
+}
+
+.resource-icon.workers {
+    color: var(--color-workers, #6B4423);
+}
+
+.resource-icon.mummers {
+    color: var(--color-mummers, #8B4513);
+}
+
+.resource-icon.animals {
+    color: var(--color-animals, #8B7355);
+}
+
+.resource-icon.slaves {
+    color: var(--color-slaves, #654321);
+}
+
+.resource-icon.prisoners {
+    color: var(--color-prisoners, #8B0000);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1199px) {
+    .player-panel {
+        min-width: 150px;
+        padding: 10px 12px;
+    }
+    
+    .player-name {
+        font-size: 1em;
+    }
+    
+    .resource-item {
+        font-size: 0.85em;
+    }
+}
+
+@media (max-width: 767px) {
+    .player-panels {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .player-panel {
+        min-width: 100%;
+    }
+}

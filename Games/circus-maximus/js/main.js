@@ -31,5 +31,43 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Start game button NOT found!');
     }
     
+    // DIAGNOSTICS: Z-Index Layer Checker
+    if (new URLSearchParams(window.location.search).get('diagnostics') === 'true') {
+        console.log('%c=== Z-INDEX LAYER DIAGNOSTICS ===', 'font-size: 16px; font-weight: bold; color: red;');
+        
+        const checkZIndex = (selector, name) => {
+            const el = document.querySelector(selector);
+            if (el) {
+                const zIndex = window.getComputedStyle(el).zIndex;
+                const position = window.getComputedStyle(el).position;
+                console.log(`${name}:`, {
+                    selector,
+                    zIndex: zIndex !== 'auto' ? zIndex : 'auto (needs position)',
+                    position,
+                    actualZIndex: position !== 'static' ? zIndex : 'static (z-index ignored)'
+                });
+                return { zIndex, position };
+            } else {
+                console.warn(`${name} not found:`, selector);
+                return null;
+            }
+        };
+        
+        setTimeout(() => {
+            checkZIndex('.game-container', 'Game Container');
+            checkZIndex('.city-backdrop', 'City Backdrop');
+            checkZIndex('.player-panels', 'Player Panels');
+            checkZIndex('.markets-panel', 'Markets Panel');
+            checkZIndex('.victory-tracks-panel', 'Victory Tracks Panel');
+            checkZIndex('.round-info-panel', 'Round Info Panel');
+            checkZIndex('.phase-indicator', 'Phase Indicator');
+            checkZIndex('.action-panel', 'Action Panel');
+            checkZIndex('.action-log', 'Action Log');
+            checkZIndex('.location-tooltip', 'Location Tooltip');
+            checkZIndex('select', 'Select Dropdowns');
+            checkZIndex('input', 'Input Fields');
+        }, 1000);
+    }
+    
     console.log('Circus Maximus game initialized');
 });

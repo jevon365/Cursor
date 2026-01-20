@@ -15,7 +15,7 @@
         
         <main id="game-container">
             <!-- Game will be rendered here -->
-            <div id="game-setup" class="screen active">
+            <div id="game-setup" class="screen active" style="display: block !important;">
                 <h2>Game Setup</h2>
                 <div class="setup-options">
                     <label>
@@ -32,7 +32,35 @@
             </div>
             
             <div id="game-play" class="screen">
-                <!-- Game interface will be rendered here -->
+                <!-- Layered overlay system: Backdrop background with panels on top -->
+                <div id="game-container-layout" class="game-container">
+                    <!-- Base Layer: City Backdrop (background) -->
+                    <div id="city-backdrop-center" class="city-backdrop">
+                        <!-- Backdrop image and location spots -->
+                    </div>
+                    
+                    <!-- Overlay Layer 1: Fixed Panels (Top, Left, Right, Bottom) -->
+                    <div id="player-panels-top" class="player-panels">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                    
+                    <div id="markets-panel-left" class="markets-panel">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                    
+                    <div id="victory-tracks-right" class="victory-tracks-panel">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                    
+                    <div id="round-info-bottom" class="round-info-panel">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                    
+                    <!-- Overlay Layer 2: Floating Elements (Phase, Actions, Log) -->
+                    <div id="phase-indicator" class="phase-indicator"></div>
+                    <div id="action-panel" class="action-panel"></div>
+                    <div id="action-log" class="action-log collapsed"></div>
+                </div>
             </div>
             
             <div id="game-end" class="screen">

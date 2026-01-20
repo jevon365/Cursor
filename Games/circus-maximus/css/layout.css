@@ -1,0 +1,364 @@
+/* Layout CSS - Layered Overlay System for Circus Maximus */
+
+/* Main Game Container - Backdrop background with overlay panels */
+.game-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 100vh;
+    overflow: hidden; /* Prevent scrollbars */
+    box-sizing: border-box;
+}
+
+/* City Backdrop - Base background layer (NOT a grid area) */
+.city-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    overflow: hidden;
+    z-index: 1; /* Bottom layer - everything else goes on top */
+    /* Backdrop image will be set in Batch 5 */
+}
+
+/* Top: Player Resource Panels - Fixed overlay */
+.player-panels {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center; /* Center the group of panels */
+    padding: 6px 8px; /* Reduced vertical padding */
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.0) 0%,
+        rgba(255, 255, 255, 0.0) 100%
+    ); /* Fully transparent background - 0.0 opacity */
+    border-bottom: 1px solid rgba(205, 133, 63, 0.0); /* Fully transparent border */
+    overflow: visible; /* No scrolling - show all content */
+    z-index: 50; /* Above backdrop */
+    box-sizing: border-box;
+    flex-wrap: nowrap; /* Keep panels together in one row */
+    align-items: flex-start; /* Align to top */
+    transition: background 0.3s ease;
+}
+
+.player-panels:hover {
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.0) 0%,
+        rgba(255, 255, 255, 0.0) 100%
+    ); /* Fully transparent - coloring only on content */
+}
+
+/* Scrollbar styling for player panels */
+.player-panels::-webkit-scrollbar {
+    height: 8px;
+}
+
+.player-panels::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.05);
+    border-radius: 4px;
+}
+
+.player-panels::-webkit-scrollbar-thumb {
+    background: var(--color-border, #CD853F);
+    border-radius: 4px;
+}
+
+.player-panels::-webkit-scrollbar-thumb:hover {
+    background: var(--color-accent, #8B4513);
+}
+
+/* Left: Markets Panel - Fixed overlay with retract/expand */
+.markets-panel {
+    position: fixed;
+    top: 60px; /* Below player panels */
+    left: 0;
+    width: 50px; /* Retracted width - minimal */
+    bottom: 0; /* Fill to bottom of screen - matches victory tracks panel */
+    background: linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.0) 0%,
+        rgba(255, 255, 255, 0.0) 100%
+    ); /* Fully transparent background - 0.0 opacity */
+    border-right: 1px solid rgba(205, 133, 63, 0.0); /* Fully transparent border */
+    overflow: visible; /* Allow content to be visible - prevent clipping */
+    padding: 2px 4px 8px 4px; /* Minimal top padding - 2px */
+    z-index: 50; /* Above backdrop */
+    box-sizing: border-box;
+    transition: width 0.3s ease, padding 0.3s ease, background 0.3s ease;
+    display: flex; /* Use flex to distribute space evenly */
+    flex-direction: column;
+    min-width: 50px; /* Ensure minimum touch target on mobile */
+}
+
+.markets-panel:hover {
+    width: 180px; /* Expanded width */
+    padding: 4px 8px 12px 8px; /* Reduced top padding - 4px on hover */
+    background: linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.0) 0%,
+        rgba(255, 255, 255, 0.0) 100%
+    ); /* Fully transparent - coloring only on content */
+    z-index: 150; /* Bring hovered panel above other panels */
+}
+
+/* Scrollbar styling for markets panel */
+.markets-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.markets-panel::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.05);
+    border-radius: 4px;
+}
+
+.markets-panel::-webkit-scrollbar-thumb {
+    background: var(--color-border, #CD853F);
+    border-radius: 4px;
+}
+
+.markets-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--color-accent, #8B4513);
+}
+
+/* City Backdrop already defined above - removed duplicate */
+
+/* Right: Victory Tracks Panel - Fixed overlay with retract/expand */
+.victory-tracks-panel {
+    position: fixed;
+    top: 60px; /* Below player panels */
+    right: 0;
+    width: 70px; /* Retracted width - matches pill container size with borders and padding */
+    bottom: 0; /* Fill to bottom of screen - above round info panel when it appears */
+    background: linear-gradient(
+        to left,
+        rgba(255, 255, 255, 0.0) 0%,
+        rgba(255, 255, 255, 0.0) 100%
+    ); /* Fully transparent background - 0.0 opacity */
+    border-left: 1px solid rgba(205, 133, 63, 0.0); /* Fully transparent border */
+    overflow: visible; /* Allow content to be visible - prevent clipping */
+    padding: 2px 4px 8px 4px; /* Minimal padding to match markets panel */
+    z-index: 50; /* Above backdrop */
+    box-sizing: border-box;
+    transition: width 0.3s ease, padding 0.3s ease, background 0.3s ease;
+    display: flex; /* Use flex to distribute space evenly */
+    flex-direction: column;
+    min-height: 200px; /* Ensure minimum height */
+    min-width: 70px; /* Ensure minimum touch target on mobile */
+}
+
+.victory-tracks-panel:hover {
+    width: 150px; /* Expanded width - increased to display all 3 bars fully */
+    right: 0; /* No margin - panel touches right edge */
+    padding: 4px 8px 12px 8px; /* More padding for better spacing - match markets panel */
+    background: linear-gradient(
+        to left,
+        rgba(255, 255, 255, 0.0) 0%,
+        rgba(255, 255, 255, 0.0) 100%
+    ); /* Fully transparent - coloring only on content */
+    z-index: 150; /* Bring hovered panel above other panels */
+}
+
+/* Scrollbar styling for victory tracks panel */
+.victory-tracks-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.victory-tracks-panel::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.05);
+    border-radius: 4px;
+}
+
+.victory-tracks-panel::-webkit-scrollbar-thumb {
+    background: var(--color-border, #CD853F);
+    border-radius: 4px;
+}
+
+.victory-tracks-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--color-accent, #8B4513);
+}
+
+/* Bottom: Round Information Panel - Fixed overlay with retract/expand */
+.round-info-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40px; /* Retracted height - minimal */
+    max-height: 150px; /* Maximum height when expanded */
+    background: linear-gradient(
+        to top,
+        rgba(253, 245, 230, 0.0) 0%,
+        rgba(253, 245, 230, 0.0) 100%
+    ); /* Fully transparent background - 0.0 opacity */
+    border-top: 2px solid rgba(205, 133, 63, 0.0); /* Fully transparent border */
+    padding: 8px 16px; /* Reduced vertical padding when retracted */
+    overflow-y: auto;
+    overflow-x: visible;
+    z-index: 50; /* Above backdrop */
+    box-sizing: border-box;
+    transition: height 0.3s ease, max-height 0.3s ease, padding 0.3s ease, background 0.3s ease, border-top-color 0.3s ease;
+}
+
+/* More opaque on hover for usability */
+.round-info-panel:hover {
+    height: auto; /* Auto height on hover */
+    max-height: 150px; /* Maximum height when expanded */
+    padding: 16px; /* Full padding on hover */
+    background: linear-gradient(
+        to top,
+        rgba(253, 245, 230, 0.0) 0%,
+        rgba(253, 245, 230, 0.0) 100%
+    ); /* Fully transparent - coloring only on content */
+    border-top-color: rgba(205, 133, 63, 0.0); /* Fully transparent border */
+    z-index: 150; /* Bring hovered panel above other panels */
+}
+
+/* Floating elements - Above all panels */
+.phase-indicator {
+    position: fixed;
+    top: 20px;
+    left: 12.5%;
+    transform: translateX(-50%);
+    z-index: 200; /* Above panels */
+    pointer-events: none;
+    /* DIAGNOSTIC: Visual indicator */
+    /* border: 3px solid rgba(255, 0, 255, 0.5) !important; */
+}
+
+.action-panel {
+    position: fixed;
+    bottom: 200px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 200; /* Above panels */
+    pointer-events: auto;
+    /* DIAGNOSTIC: Visual indicator */
+    /* border: 3px solid rgba(255, 165, 0, 0.5) !important; */
+}
+
+.action-log {
+    position: fixed;
+    top: 20px;
+    right: 80px;
+    width: 300px;
+    z-index: 200; /* Above panels */
+    pointer-events: auto;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    /* DIAGNOSTIC: Visual indicator */
+    /* border: 3px solid rgba(0, 255, 255, 0.5) !important; */
+}
+
+.action-log.collapsed {
+    max-height: 40px;
+    overflow: hidden; /* Hide overflow when collapsed */
+}
+
+.action-log:not(.collapsed) {
+    /* No max-height - show all content */
+    max-height: none;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 1199px) {
+    .markets-panel {
+        width: 50px; /* Retracted width */
+    }
+    
+    .markets-panel:hover {
+        width: 160px; /* Expanded width on tablet */
+    }
+    
+    .victory-tracks-panel {
+        width: 50px; /* Retracted width */
+    }
+    
+    .victory-tracks-panel:hover {
+        width: 150px; /* Expanded width on tablet - increased to display all 3 bars */
+        right: 0; /* No margin - panel touches right edge */
+    }
+    
+    .player-panels {
+        min-height: 90px;
+    }
+    
+    .round-info-panel {
+        max-height: 160px;
+    }
+    
+    .action-log {
+        right: 200px;
+        width: 250px;
+    }
+    
+    .action-log:not(.collapsed) {
+        max-height: none; /* Show all content */
+    }
+}
+
+/* Mobile (< 768px) - Stack vertically */
+@media (max-width: 767px) {
+    .markets-panel {
+        top: 90px;
+        left: 0;
+        width: 100%;
+        height: 200px;
+        bottom: auto;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-right: none;
+        border-bottom: 2px solid var(--color-border, #CD853F);
+    }
+    
+    .victory-tracks-panel {
+        top: 290px; /* Below markets panel */
+        right: 0;
+        width: 100%;
+        height: 200px;
+        bottom: auto;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-left: none;
+        border-bottom: 2px solid var(--color-border, #CD853F);
+    }
+    
+    .round-info-panel {
+        top: auto;
+        bottom: 0;
+        height: 40px; /* Retracted height on mobile */
+        max-height: 200px; /* Maximum height when expanded */
+    }
+    
+    .round-info-panel:hover {
+        height: auto; /* Auto height on hover */
+        max-height: 200px; /* Maximum height when expanded */
+    }
+    
+    .phase-indicator {
+        top: auto;
+        bottom: 250px;
+    }
+    
+    .action-panel {
+        bottom: 180px;
+    }
+    
+    .action-log {
+        top: auto;
+        bottom: 450px;
+        right: 10px;
+        width: calc(100vw - 20px);
+        max-width: 300px;
+    }
+}
