@@ -55,7 +55,8 @@
 .action-log-content {
     flex: 1;
     min-height: 0; /* Allow flexbox to shrink */
-    overflow: visible; /* No scrolling - show all content when expanded */
+    overflow-y: auto; /* Enable scrolling when expanded */
+    overflow-x: hidden;
     transition: max-height 0.3s ease, opacity 0.3s ease;
     box-sizing: border-box;
 }

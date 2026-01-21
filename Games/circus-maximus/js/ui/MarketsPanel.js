@@ -72,10 +72,12 @@ export class MarketsPanel {
         const fillPercentage = (availableCount / maxCapacity) * 100;
         
         // Check if current player can buy from this market
+        // Player must be in the queue (turn order determines when it's their turn)
         const currentPlayer = state.currentPlayer;
+        const playerInQueue = queue.includes(currentPlayer.id);
         const canBuy = isCurrent && 
                       queue.length > 0 && 
-                      queue[0] === currentPlayer.id &&
+                      playerInQueue &&
                       availableCount > 0 &&
                       currentPlayer.resources.coins >= currentPrice;
         

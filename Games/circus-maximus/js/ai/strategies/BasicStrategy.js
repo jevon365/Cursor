@@ -122,14 +122,27 @@ export class BasicStrategy {
      * @returns {boolean} True if player is first
      */
     isFirstPlayer(gameState, player) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H1',location:'BasicStrategy.js:isFirstPlayer',message:'isFirstPlayer called',data:{hasGameState:!!gameState,hasPlayer:!!player,playerId:player?.id,turnOrder:gameState?.turnOrder,turnOrderLength:gameState?.turnOrder?.length},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         if (!gameState || !player) return false;
         try {
             const turnOrder = gameState.turnOrder || [];
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H1',location:'BasicStrategy.js:isFirstPlayer',message:'Checking turnOrder',data:{turnOrderLength:turnOrder.length,firstInOrder:turnOrder[0],playerId:player?.id,comparison:player?.id === turnOrder[0]},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             if (turnOrder.length === 0) return false;
             
             // Compare player ID to first player in turn order
-            return player.id === turnOrder[0];
+            const result = player.id === turnOrder[0];
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H1',location:'BasicStrategy.js:isFirstPlayer',message:'isFirstPlayer result',data:{result,playerId:player?.id,turnOrderFirst:turnOrder[0]},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
+            return result;
         } catch (e) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H3',location:'BasicStrategy.js:isFirstPlayer',message:'isFirstPlayer error',data:{error:e?.message},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             return false;
         }
     }
@@ -163,14 +176,19 @@ export class BasicStrategy {
         let score = 0;
         
         // Check if we can participate (have required resources)
+        // NOTE: For bidding, we don't need resources yet - we can bid and get resources later
+        // So we don't disqualify acts entirely, just give them a lower score
+        let canParticipate = false;
         try {
             const participation = canParticipateInAct(player, act);
-            if (!participation.canParticipate) {
-                return -Infinity; // Can't participate, don't bid
+            canParticipate = participation.canParticipate;
+            // If we can't participate, reduce score but don't disqualify (we might get resources later)
+            if (!canParticipate) {
+                score -= 5; // Penalty for not having resources, but still allow bidding
             }
         } catch (e) {
-            // If validation fails, assume we can't participate
-            return -Infinity;
+            // If validation fails, assume we can't participate but still allow bidding
+            score -= 5;
         }
         
         // Reward value - coins
@@ -513,6 +531,42 @@ export class BasicStrategy {
         const hasBid = this.hasPlayerBid(player);
         const mustBid = isFirst && !hasBid;
         
+        // AI should sometimes pass even if it could bid
+        // This prevents infinite bidding loops
+        // After placing at least one bid, AI has a chance to pass
+        if (!mustBid && hasBid) {
+            // Get number of bids already placed
+            const bidCount = player.bids ? player.bids.length : 0;
+            
+            // Probability to pass increases with number of bids already placed
+            // After 1 bid: 30% chance to pass
+            // After 2 bids: 50% chance to pass
+            // After 3+ bids: 70% chance to pass
+            let passProbability = 0.3;
+            if (bidCount >= 3) {
+                passProbability = 0.7;
+            } else if (bidCount >= 2) {
+                passProbability = 0.5;
+            }
+            
+            // Adjust based on difficulty - harder AI is more strategic (bids more)
+            // Easy AI passes more often, hard AI bids more strategically
+            if (this.randomness > 0.6) {
+                // Easy: pass more often
+                passProbability += 0.2;
+            } else if (this.randomness < 0.3) {
+                // Hard: pass less often (more strategic bidding)
+                passProbability -= 0.1;
+            }
+            
+            // Clamp probability
+            passProbability = Math.max(0.1, Math.min(0.9, passProbability));
+            
+            if (Math.random() < passProbability) {
+                return { type: 'pass' };
+            }
+        }
+        
         // Score all acts
         const scoredActs = allActs.map(act => ({
             option: act,
@@ -573,23 +627,23 @@ export class BasicStrategy {
             coins: bidAmount
         };
         
-        // Validate the bid action
-        try {
-            const validation = validateBid(bidAction, gameState, config);
-            if (!validation.valid) {
-                if (mustBid) {
-                    // First player rule: try minimum bid on first act
-                    return {
-                        type: 'bid',
-                        actId: allActs[0].id,
-                        coins: minBid
-                    };
-                }
-                return { type: 'pass' };
+        // NOTE: gameState from getState() is a plain object, not GameState instance
+        // So we can't use validateBid which expects gameState.getCurrentPlayer()
+        // The actual validation will happen in GameEngine.executeAction() which has the real GameState
+        // Just do basic sanity checks here
+        if (!bidAction.actId) {
+            if (mustBid && allActs[0]) {
+                return {
+                    type: 'bid',
+                    actId: allActs[0].id,
+                    coins: minBid
+                };
             }
-        } catch (e) {
-            if (mustBid) {
-                // First player rule: try minimum bid on first act
+            return { type: 'pass' };
+        }
+        
+        if (bidAmount < minBid || bidAmount > playerCoins) {
+            if (mustBid && allActs[0]) {
                 return {
                     type: 'bid',
                     actId: allActs[0].id,
@@ -610,8 +664,14 @@ export class BasicStrategy {
      * @returns {object} { type: 'placeWorker'|'pass', locationId? }
      */
     decideWorkerPlacement(gameState, player, config) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'WORKER_PLACEMENT',location:'BasicStrategy.js:decideWorkerPlacement',message:'decideWorkerPlacement entry',data:{hasGameState:!!gameState,hasPlayer:!!player,playerId:player?.id,currentPhase:gameState?.currentPhase},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         // Safety: always return pass if invalid inputs
         if (!gameState || !player) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'WORKER_PLACEMENT',location:'BasicStrategy.js:decideWorkerPlacement',message:'Invalid inputs - returning pass',data:{hasGameState:!!gameState,hasPlayer:!!player},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             return { type: 'pass' };
         }
         
@@ -620,14 +680,26 @@ export class BasicStrategy {
         
         // Edge case: No available workers
         const availableWorkers = this.safeGetAvailableWorkers(player);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'WORKER_PLACEMENT',location:'BasicStrategy.js:decideWorkerPlacement',message:'Checking available workers',data:{availableWorkers,playerId:player?.id},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         if (availableWorkers <= 0) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'WORKER_PLACEMENT',location:'BasicStrategy.js:decideWorkerPlacement',message:'No available workers - returning pass',data:{availableWorkers},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             return { type: 'pass' };
         }
         
         // Edge case: No coins to pay worker cost
         const playerCoins = this.safeGetResource(player, 'coins');
         const workerCost = (config?.limits?.workerDeployCost || 1) + (gameState.workerCostModifier || 0);
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'WORKER_PLACEMENT',location:'BasicStrategy.js:decideWorkerPlacement',message:'Checking coins for worker cost',data:{playerCoins,workerCost,canAfford:playerCoins >= workerCost},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         if (playerCoins < workerCost) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'WORKER_PLACEMENT',location:'BasicStrategy.js:decideWorkerPlacement',message:'Insufficient coins - returning pass',data:{playerCoins,workerCost},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             return { type: 'pass' };
         }
         
@@ -636,11 +708,21 @@ export class BasicStrategy {
         try {
             validLocations = getValidWorkerLocations(gameState, player, config) || [];
         } catch (e) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'WORKER_PLACEMENT',location:'BasicStrategy.js:decideWorkerPlacement',message:'Error getting valid locations - returning pass',data:{error:e?.message},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             return { type: 'pass' };
         }
         
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'WORKER_PLACEMENT',location:'BasicStrategy.js:decideWorkerPlacement',message:'Valid locations found',data:{validLocationsCount:validLocations.length,validLocations},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+        
         // Edge case: No valid locations
         if (!validLocations || validLocations.length === 0) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'WORKER_PLACEMENT',location:'BasicStrategy.js:decideWorkerPlacement',message:'No valid locations - returning pass',data:{validLocationsCount:validLocations?.length},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             return { type: 'pass' };
         }
         
@@ -653,8 +735,15 @@ export class BasicStrategy {
         // Use weighted selection based on difficulty
         const selectedLocation = this.selectOption(scoredLocations);
         
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'WORKER_PLACEMENT',location:'BasicStrategy.js:decideWorkerPlacement',message:'After selectOption',data:{selectedLocation,scoredLocationsCount:scoredLocations.length,topScores:scoredLocations.slice(0,3).map(s=>({location:s.option,score:s.score}))},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+        
         // Edge case: No location selected
         if (!selectedLocation) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'WORKER_PLACEMENT',location:'BasicStrategy.js:decideWorkerPlacement',message:'No location selected - returning pass',data:{},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             return { type: 'pass' };
         }
         
@@ -662,10 +751,19 @@ export class BasicStrategy {
         // Easy AI has lower threshold, more likely to place workers
         const threshold = this.randomness > 0.5 ? 0.5 : 1;
         const selectedScore = scoredLocations.find(s => s.option === selectedLocation)?.score || 0;
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'WORKER_PLACEMENT',location:'BasicStrategy.js:decideWorkerPlacement',message:'Checking score threshold',data:{selectedLocation,selectedScore,threshold,randomness:this.randomness,willPlace:selectedScore >= threshold},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         if (selectedScore < threshold) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'WORKER_PLACEMENT',location:'BasicStrategy.js:decideWorkerPlacement',message:'Score below threshold - returning pass',data:{selectedScore,threshold},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             return { type: 'pass' };
         }
         
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'WORKER_PLACEMENT',location:'BasicStrategy.js:decideWorkerPlacement',message:'Returning placeWorker action',data:{locationId:selectedLocation},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         return {
             type: 'placeWorker',
             locationId: selectedLocation
@@ -768,33 +866,61 @@ export class BasicStrategy {
      * @returns {object} Action to execute
      */
     decide(gameState, player, config) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'DECIDE',location:'BasicStrategy.js:decide',message:'decide called',data:{hasGameState:!!gameState,hasPlayer:!!player,playerId:player?.id,currentPhase:gameState?.currentPhase},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         // Safety: always return pass if invalid inputs
         if (!gameState || !player) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'DECIDE',location:'BasicStrategy.js:decide',message:'Invalid inputs in decide - returning pass',data:{hasGameState:!!gameState,hasPlayer:!!player},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             return { type: 'pass' };
         }
         
         const phase = gameState.currentPhase;
         
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'DECIDE',location:'BasicStrategy.js:decide',message:'Phase routing',data:{phase,playerId:player?.id},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+        
         // Safety: return pass for unknown phases
         if (!phase) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'DECIDE',location:'BasicStrategy.js:decide',message:'No phase - returning pass',data:{},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             return { type: 'pass' };
         }
         
         try {
             switch (phase) {
                 case 'bidOnActs':
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'DECIDE',location:'BasicStrategy.js:decide',message:'Routing to decideBid',data:{phase},timestamp:Date.now()})}).catch(()=>{});
+                    // #endregion
                     return this.decideBid(gameState, player, config);
                 
                 case 'placeWorkers':
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'DECIDE',location:'BasicStrategy.js:decide',message:'Routing to decideWorkerPlacement',data:{phase},timestamp:Date.now()})}).catch(()=>{});
+                    // #endregion
                     return this.decideWorkerPlacement(gameState, player, config);
                 
                 case 'buyResources':
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'DECIDE',location:'BasicStrategy.js:decide',message:'Routing to decideMarketPurchase',data:{phase},timestamp:Date.now()})}).catch(()=>{});
+                    // #endregion
                     return this.decideMarketPurchase(gameState, player, config);
                 
                 default:
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'DECIDE',location:'BasicStrategy.js:decide',message:'Unknown phase - returning pass',data:{phase},timestamp:Date.now()})}).catch(()=>{});
+                    // #endregion
                     return { type: 'pass' };
             }
         } catch (e) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'DECIDE',location:'BasicStrategy.js:decide',message:'Error in decide - returning pass',data:{error:e?.message,phase},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             // Safety: return pass on any error
             return { type: 'pass' };
         }

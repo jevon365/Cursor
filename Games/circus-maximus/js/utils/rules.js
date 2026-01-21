@@ -78,6 +78,11 @@ export function validateWorkerPlacement(action, gameState, config) {
         return { valid: false, reason: 'Invalid location' };
     }
     
+    // Check location is not disabled in config (e.g., Gamblers Den in MVP)
+    if (space.disabled === true) {
+        return { valid: false, reason: 'Location is not available' };
+    }
+    
     // Check location is not disabled by event
     if (gameState.disabledLocations && gameState.disabledLocations.includes(action.locationId)) {
         return { valid: false, reason: 'Location is disabled this round' };
@@ -90,7 +95,8 @@ export function validateWorkerPlacement(action, gameState, config) {
     }
     
     // Check if player can place more workers at this location (capacity check)
-    const availableSpaces = gameState.board.getAvailableSpaces(currentPlayer.id);
+    const playerCount = gameState.players.length;
+    const availableSpaces = gameState.board.getAvailableSpaces(currentPlayer.id, playerCount);
     if (!availableSpaces.find(s => s.id === action.locationId)) {
         return { valid: false, reason: 'Cannot place worker at this location (max reached or stock depleted)' };
     }
@@ -194,7 +200,13 @@ export function validateResourcePurchase(action, gameState, config) {
     
     // Check if player has worker in the market queue
     const marketQueue = gameState.marketQueues[action.resourceType];
-    if (!marketQueue || !marketQueue.includes(currentPlayer.id)) {
+    const playerInQueue = marketQueue && marketQueue.includes(currentPlayer.id);
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIRST-PLAYER-BUG',location:'rules.js:validateResourcePurchase',message:'validation check for first player',data:{currentPlayerId:currentPlayer.id,currentPlayerIndex:gameState.currentPlayerIndex,resourceType:action.resourceType,currentMarket:gameState.currentMarket,marketQueue,playerInQueue,turnOrder:gameState.turnOrder},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    
+    if (!marketQueue || !playerInQueue) {
         return { valid: false, reason: `You must have a worker in ${action.resourceType} market to buy this resource` };
     }
     
@@ -384,7 +396,53 @@ export function getValidWorkerLocations(gameState, player, config) {
         return [];
     }
     
-    const availableSpaces = gameState.board.getAvailableSpaces(player.id);
+    const playerCount = gameState.players.length;
+    
+    // Handle both Board instance and plain object from getState()
+    let availableSpaces = [];
+    if (typeof gameState.board.getAvailableSpaces === 'function') {
+        // Board instance
+        availableSpaces = gameState.board.getAvailableSpaces(player.id, playerCount);
+    } else {
+        // Plain object from getState() - replicate getAvailableSpaces logic
+        const spaces = gameState.board.spaces || [];
+        const workerPlacements = gameState.board.workerPlacements || {};
+        
+        availableSpaces = spaces.filter(space => {
+            // Skip disabled locations (e.g., Gamblers Den in MVP)
+            if (space.disabled === true) {
+                return false;
+            }
+            
+            const playerPlacements = workerPlacements[space.id]?.[player.id] || 0;
+            
+            // Check max workers per player (for markets)
+            if (space.maxWorkersPerPlayer !== null && space.maxWorkersPerPlayer !== "unlimited" && 
+                typeof space.maxWorkersPerPlayer === 'number' && playerPlacements >= space.maxWorkersPerPlayer) {
+                return false;
+            }
+            
+            // Check max workers total
+            if (space.maxWorkersTotal !== null && space.maxWorkersTotal !== undefined) {
+                const totalWorkers = Object.values(workerPlacements[space.id] || {}).reduce((sum, count) => sum + count, 0);
+                
+                // Handle prison: max workers = 2 per player
+                if (space.maxWorkersTotal === "perPlayer") {
+                    const maxWorkers = 2 * playerCount;
+                    if (totalWorkers >= maxWorkers) {
+                        return false;
+                    }
+                } else if (typeof space.maxWorkersTotal === 'number') {
+                    // Regular maxWorkersTotal (like 1 for most action locations)
+                    if (totalWorkers >= space.maxWorkersTotal) {
+                        return false;
+                    }
+                }
+            }
+            
+            return true;
+        });
+    }
     
     for (const space of availableSpaces) {
         // Skip disabled locations

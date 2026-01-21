@@ -164,6 +164,9 @@ export class GameState {
         
         if (!this.passedPlayers.includes(this.currentPlayerIndex)) {
             this.passedPlayers.push(this.currentPlayerIndex);
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H5',location:'GameState.js:markPlayerPassed',message:'player marked passed',data:{currentPlayerIndex:this.currentPlayerIndex,passedPlayers:this.passedPlayers},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             return true;
         }
         return false;
@@ -176,6 +179,9 @@ export class GameState {
         const index = this.passedPlayers.indexOf(this.currentPlayerIndex);
         if (index >= 0) {
             this.passedPlayers.splice(index, 1);
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H5',location:'GameState.js:unmarkPlayerPassed',message:'player unmarked passed',data:{currentPlayerIndex:this.currentPlayerIndex,passedPlayers:this.passedPlayers},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
         }
     }
 
@@ -191,6 +197,9 @@ export class GameState {
      */
     clearPassedPlayers() {
         this.passedPlayers = [];
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H5',location:'GameState.js:clearPassedPlayers',message:'passed players cleared',data:{},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
     }
 
     /**

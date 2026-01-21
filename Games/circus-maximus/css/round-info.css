@@ -5,8 +5,10 @@
     flex-direction: column;
     gap: 16px;
     padding: 0; /* Padding handled by layout.css */
-    overflow: visible; /* No scrolling - show all content */
+    overflow-y: auto; /* Enable vertical scrolling when content exceeds panel height */
+    overflow-x: hidden;
     box-sizing: border-box;
+    max-height: 100%; /* Respect parent container height */
 }
 
 /* Content container - hidden when retracted */
@@ -145,7 +147,8 @@
     flex-wrap: wrap; /* Wrap items if needed */
     gap: 16px;
     width: 100%;
-    overflow: visible; /* No scrolling - show all content */
+    overflow-y: auto; /* Enable scrolling if content is too tall */
+    overflow-x: hidden;
     box-sizing: border-box;
 }
 

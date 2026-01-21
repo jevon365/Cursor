@@ -30,36 +30,49 @@ export class GameEngine {
      * Initialize a new game with players
      */
     initializeGame(players) {
-        // Create Player objects if needed
-        const playerObjects = players.map((p, index) => {
-            if (p instanceof Player) {
-                return p;
+        try {
+            if (!players || players.length === 0) {
+                throw new Error('No players provided to initializeGame');
             }
-            return new Player(index, p.name || `Player ${index + 1}`, p.isAI || false);
-        });
 
-        this.state.initialize(playerObjects);
-        this.board.clearWorkers();
-        this.phases.reset();
-        this.events.initializeDeck();
-        this.acts.initializeActPool();
-        this.acts.setupRound();
-        
-        // Draw and resolve first event
-        this.events.drawEvent();
-        this.events.resolveEvent(this.state, this.markets);
-        
-        // Announce event and mandatory execution act
-        this.announceRoundStart();
-        
-        // Set initial phase
-        const initialPhase = this.phases.getCurrentPhase();
-        if (initialPhase) {
+            // Create Player objects if needed
+            const playerObjects = players.map((p, index) => {
+                if (p instanceof Player) {
+                    return p;
+                }
+                return new Player(index, p.name || `Player ${index + 1}`, p.isAI || false);
+            });
+
+            this.state.initialize(playerObjects);
+            this.board.clearWorkers();
+            this.phases.reset();
+            this.events.initializeDeck();
+            this.acts.initializeActPool();
+            this.acts.setupRound();
+            
+            // Draw and resolve first event
+            this.events.drawEvent();
+            this.events.resolveEvent(this.state, this.markets);
+            
+            // Announce event and mandatory execution act
+            this.announceRoundStart();
+            
+            // Set initial phase
+            const initialPhase = this.phases.getCurrentPhase();
+            if (!initialPhase) {
+                throw new Error('No initial phase available after reset');
+            }
+            
             this.state.setPhase(initialPhase.id);
             this.phases.onPhaseStart(this.state);
+            
+            this.initialized = true;
+        } catch (error) {
+            console.error('Error in initializeGame:', error);
+            console.error('Stack:', error.stack);
+            this.initialized = false;
+            throw error;
         }
-        
-        this.initialized = true;
     }
 
     /**
@@ -112,7 +125,10 @@ export class GameEngine {
             currentMarket: this.state.currentMarket,
             message: this.state.message,
             messageHistory: this.state.messageHistory,
-            lastActResults: this.state.lastActResults || []
+            lastActResults: this.state.lastActResults || [],
+            turnOrder: this.state.turnOrder,
+            passedPlayers: this.state.passedPlayers,
+            currentPlayerIndex: this.state.currentPlayerIndex
         };
     }
 
@@ -194,7 +210,8 @@ export class GameEngine {
                     }
                     
                     // Try to place worker on board
-                    const placeResult = this.board.placeWorker(action.locationId, currentPlayer.id);
+                    const playerCount = this.state.players.length;
+                    const placeResult = this.board.placeWorker(action.locationId, currentPlayer.id, playerCount);
                     if (!placeResult.success) {
                         return { success: false, error: placeResult.reason || 'Cannot place worker at this location' };
                     }
@@ -211,6 +228,8 @@ export class GameEngine {
                     if (!effectResult.success) {
                         // Effect failed - remove worker from board
                         this.board.removeWorker(action.locationId, currentPlayer.id);
+                        // Remove from market queue if this was a market location
+                        this.removePlayerFromMarketQueue(action.locationId, currentPlayer.id);
                         return { success: false, error: effectResult.error || 'Location effect failed' };
                     }
                     
@@ -218,6 +237,8 @@ export class GameEngine {
                     if (effectResult.workerDied) {
                         // Worker died - remove from board, return to supply, don't deduct cost
                         this.board.removeWorker(action.locationId, currentPlayer.id);
+                        // Remove from market queue if this was a market location
+                        this.removePlayerFromMarketQueue(action.locationId, currentPlayer.id);
                         // Worker already returned to supply in handleCoinFlipEffect
                         // Don't deduct cost, don't place worker
                         // Space is now available again (worker removed from board)
@@ -229,18 +250,25 @@ export class GameEngine {
                         if (effectResult.shouldPlaceWorker !== false) {
                             currentPlayer.placeWorker();
                         }
-                    }
-                    
-                    // Track market queues for market locations
-                    if (location.type === 'market' && location.marketType) {
-                        // Ensure queue exists
-                        if (!this.state.marketQueues[location.marketType]) {
-                            this.state.marketQueues[location.marketType] = [];
-                        }
-                        const queue = this.state.marketQueues[location.marketType];
-                        // Only add if not already in queue (avoid duplicates)
-                        if (!queue.includes(currentPlayer.id)) {
-                            queue.push(currentPlayer.id);
+                        
+                        // Track market queues for market locations - ONLY if worker successfully placed
+                        if (location.type === 'market' && location.marketType) {
+                            // Verify worker is still on board before adding to queue
+                            const workerCount = this.board.getPlayerWorkersOnSpace(action.locationId, currentPlayer.id);
+                            if (workerCount > 0) {
+                                // Ensure queue exists
+                                if (!this.state.marketQueues[location.marketType]) {
+                                    this.state.marketQueues[location.marketType] = [];
+                                }
+                                const queue = this.state.marketQueues[location.marketType];
+                                // Only add if not already in queue (avoid duplicates)
+                                if (!queue.includes(currentPlayer.id)) {
+                                    queue.push(currentPlayer.id);
+                                    // #region agent log
+                                    fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIX1',location:'GameEngine.js:executeAction',message:'player added to market queue',data:{playerId:currentPlayer.id,marketType:location.marketType,queue:this.state.marketQueues[location.marketType],workerCount},timestamp:Date.now()})}).catch(()=>{});
+                                    // #endregion
+                                }
+                            }
                         }
                     }
                     
@@ -257,14 +285,25 @@ export class GameEngine {
                 break;
             case 'buyResource':
                 if (currentPhase === 'buyResources') {
+                    // #region agent log
+                    const marketQueueForLog = this.state.marketQueues[action.resourceType] || [];
+                    fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIRST-PLAYER-BUG',location:'GameEngine.js:executeAction',message:'buyResource attempt - first player check',data:{playerId:currentPlayer.id,playerIndex:this.state.currentPlayerIndex,resourceType:action.resourceType,currentMarket:this.state.currentMarket,marketQueues:this.state.marketQueues,marketQueueForLog,playerInQueue:marketQueueForLog.includes(currentPlayer.id),turnOrder:this.state.turnOrder,firstInQueue:marketQueueForLog[0]},timestamp:Date.now()})}).catch(()=>{});
+                    // #endregion
+                    
                     // Safety check: Ensure this is the current market being resolved
                     if (this.state.currentMarket !== action.resourceType) {
+                        // #region agent log
+                        fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIRST-PLAYER-BUG',location:'GameEngine.js:executeAction',message:'buyResource failed: wrong market',data:{playerId:currentPlayer.id,resourceType:action.resourceType,currentMarket:this.state.currentMarket},timestamp:Date.now()})}).catch(()=>{});
+                        // #endregion
                         return { success: false, error: `You can only buy from ${this.state.currentMarket || 'the current'} market right now. Markets are resolved one at a time.` };
                     }
                     
                     // Safety check: Ensure player has worker in market (validation should catch this, but add safety check)
                     const marketQueue = this.state.marketQueues[action.resourceType];
                     if (!marketQueue || !marketQueue.includes(currentPlayer.id)) {
+                        // #region agent log
+                        fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIRST-PLAYER-BUG',location:'GameEngine.js:executeAction',message:'buyResource failed: not in queue',data:{playerId:currentPlayer.id,resourceType:action.resourceType,marketQueue,currentMarket:this.state.currentMarket,queueContents:marketQueue,playerInQueue:marketQueue?.includes(currentPlayer.id)},timestamp:Date.now()})}).catch(()=>{});
+                        // #endregion
                         return { success: false, error: `You must have a worker in ${action.resourceType} market to buy this resource` };
                     }
                     
@@ -274,8 +313,21 @@ export class GameEngine {
                         return { success: false, error: result.error || 'Cannot buy resource' };
                     }
                     this.state.setMessage(`${currentPlayer.name} bought ${action.resourceType} for ${result.price} coin(s)`);
+                    
                     // Player has acted, remove from passed list if they were there
+                    // NOTE: Do NOT remove player from queue - they can buy multiple resources before passing
                     this.state.unmarkPlayerPassed();
+                    
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIX-MULTI-BUY',location:'GameEngine.js:executeAction',message:'buyResource success - player stays in queue for multiple purchases',data:{playerId:currentPlayer.id,resourceType:action.resourceType,currentMarket:this.state.currentMarket,marketQueues:this.state.marketQueues,turnOrder:this.state.turnOrder,currentPlayerIndex:this.state.currentPlayerIndex,passedPlayers:this.state.passedPlayers},timestamp:Date.now()})}).catch(()=>{});
+                    // #endregion
+                    
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIX2',location:'GameEngine.js:executeAction',message:'buyResource success',data:{playerId:currentPlayer.id,resourceType:action.resourceType,currentMarket:this.state.currentMarket,marketQueues:this.state.marketQueues,turnOrder:this.state.turnOrder,currentPlayerIndex:this.state.currentPlayerIndex,passedPlayers:this.state.passedPlayers},timestamp:Date.now()})}).catch(()=>{});
+                    // #endregion
+                    
+                    // After buying, advance to next player in market queue or next market
+                    // Don't auto-advance turn here - let endTurn() handle it based on phase logic
                 }
                 break;
             default:
@@ -304,7 +356,8 @@ export class GameEngine {
         }
 
         // Check if phase should end
-        if (this.phases.shouldEndPhase(this.state)) {
+        const shouldEnd = this.phases.shouldEndPhase(this.state);
+        if (shouldEnd) {
             const currentPhaseId = this.state.currentPhase;
             
             // Handle phase-specific logic
@@ -411,6 +464,13 @@ export class GameEngine {
                     // Clear passed players before starting new phase
                     this.state.clearPassedPlayers();
                     
+                    // Rebuild market queues from board state before buyResources phase starts
+                    // This ensures queues match actual worker placements (Fix Issue 6)
+                    const nextPhase = this.phases.getCurrentPhase();
+                    if (nextPhase && nextPhase.id === 'buyResources') {
+                        this.rebuildMarketQueuesFromBoard();
+                    }
+                    
                     // Initialize the new phase - this sets up turn order
                     this.phases.onPhaseStart(this.state);
                     
@@ -437,7 +497,34 @@ export class GameEngine {
                     const nextPhase = this.phases.getCurrentPhase();
                     if (nextPhase) {
                         this.state.setPhase(nextPhase.id);
+                        this.state.clearPassedPlayers(); // Clear passed players before starting new phase
+                        
+                        // Rebuild market queues from board state before buyResources phase starts
+                        // This ensures queues match actual worker placements (Fix Issue 6)
+                        if (nextPhase.id === 'buyResources') {
+                            this.rebuildMarketQueuesFromBoard();
+                        }
+                        
                         this.phases.onPhaseStart(this.state);
+                        
+                        // For automatic phases (performActs, cleanup), immediately check if they should end
+                        // and process them if needed
+                        if (nextPhase.id === 'performActs') {
+                            // performActs is automatic - acts are resolved when shouldEndPhase is checked
+                            // It should end immediately after acts are resolved
+                            // Don't process here - wait for endTurn() call
+                        } else if (nextPhase.id === 'cleanup') {
+                            // cleanup is automatic - should end immediately
+                            // Since cleanup has no player actions, we need to process it immediately
+                            // Check if it should end (it should, since all players are marked as passed in onPhaseStart)
+                            const shouldEnd = this.phases.shouldEndPhase(this.state);
+                            if (shouldEnd) {
+                                // Process cleanup immediately by calling endTurn() recursively
+                                // This will detect cleanup phase and process it
+                                this.endTurn();
+                                return; // Exit early after processing cleanup
+                            }
+                        }
                     } else {
                         console.error('nextPhase() returned true but getCurrentPhase() returned null');
                     }
@@ -453,16 +540,27 @@ export class GameEngine {
                     }
                 }
             }
+            
+            // After phase transition, return early - don't advance turn
+            // onPhaseStart() has already set the current player correctly
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIRST-PLAYER-BUG',location:'GameEngine.js:endTurn',message:'phase transition complete - returning early to prevent turn advance',data:{currentPhase:this.state.currentPhase,currentPlayerIndex:this.state.currentPlayerIndex,turnOrder:this.state.turnOrder},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
+            return; // Don't advance turn after phase transition
         }
 
         // Special handling for Buy Resources phase - markets resolved sequentially
         if (this.state.currentPhase === 'buyResources' && this.state.currentMarket) {
             // Check if all players in current market have passed
             const currentMarketQueue = this.state.marketQueues[this.state.currentMarket] || [];
-            const allPassedInMarket = currentMarketQueue.every(playerId => {
+            const allPassedInMarket = currentMarketQueue.length > 0 && currentMarketQueue.every(playerId => {
                 const playerIndex = this.state.players.findIndex(p => p.id === playerId);
                 return playerIndex >= 0 && this.state.hasPlayerPassed(playerIndex);
             });
+            
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIX-MULTI-BUY',location:'GameEngine.js:endTurn',message:'buyResources market check',data:{currentMarket:this.state.currentMarket,currentMarketQueue,allPassedInMarket,passedPlayers:this.state.passedPlayers,turnOrder:this.state.turnOrder,currentPlayerIndex:this.state.currentPlayerIndex},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             
             if (allPassedInMarket) {
                 // Move to next market
@@ -513,6 +611,9 @@ export class GameEngine {
             }
         }
         
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIX-MULTI-BUY',location:'GameEngine.js:endTurn',message:'turn advance',data:{currentPhase:this.state.currentPhase,currentPlayerIndex:this.state.currentPlayerIndex,turnOrder,passedPlayers:this.state.passedPlayers,nextPlayerIndex,currentIndexInOrder,currentMarket:this.state.currentMarket},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         // Clear temporary track movements for the previous player (currentPlayerIndex before change)
         // Rulebook says track movements are "for this turn only"
         const previousPlayerIndex = this.state.currentPlayerIndex;
@@ -524,6 +625,9 @@ export class GameEngine {
             // Found a non-passed player, move to them
             this.state.currentPlayerIndex = nextPlayerIndex;
             this.state.turn++;
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H8',location:'GameEngine.js:endTurn',message:'turn advanced to next player',data:{currentPhase:this.state.currentPhase,newCurrentPlayerIndex:this.state.currentPlayerIndex,previousPlayerIndex:previousPlayerIndex,turnOrder,passedPlayers:this.state.passedPlayers,currentMarket:this.state.currentMarket,marketQueues:this.state.marketQueues},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
         } else {
             // All players have passed - phase should have ended, but if we get here,
             // force phase end check again as safety
@@ -845,5 +949,64 @@ export class GameEngine {
      */
     flipCoin() {
         return Math.random() >= 0.5;
+    }
+
+    /**
+     * Remove player from market queue if location is a market
+     * Called when worker is removed from a market location
+     * @param {string} locationId - The location ID
+     * @param {number} playerId - The player ID
+     */
+    removePlayerFromMarketQueue(locationId, playerId) {
+        const location = this.config.locations[locationId];
+        if (location && location.type === 'market' && location.marketType) {
+            const queue = this.state.marketQueues[location.marketType];
+            if (queue) {
+                const index = queue.indexOf(playerId);
+                if (index >= 0) {
+                    queue.splice(index, 1);
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIX3',location:'GameEngine.js:removePlayerFromMarketQueue',message:'player removed from market queue',data:{playerId,locationId,marketType:location.marketType,queueAfterRemoval:queue},timestamp:Date.now()})}).catch(()=>{});
+                    // #endregion
+                }
+            }
+        }
+    }
+
+    /**
+     * Rebuild market queues from board state
+     * Validates and syncs queues with actual worker placements
+     * Should be called at start of buyResources phase
+     */
+    rebuildMarketQueuesFromBoard() {
+        // Clear existing queues
+        this.state.marketQueues = {
+            mummers: [],
+            animals: [],
+            slaves: []
+        };
+
+        // Rebuild queues from board state
+        const marketLocationIds = {
+            'mummersMarket': 'mummers',
+            'animalsMarket': 'animals',
+            'slavesMarket': 'slaves'
+        };
+
+        for (const [locationId, marketType] of Object.entries(marketLocationIds)) {
+            const workers = this.board.getWorkersOnSpace(locationId);
+            for (const worker of workers) {
+                if (worker.count > 0) {
+                    const queue = this.state.marketQueues[marketType];
+                    if (!queue.includes(worker.playerId)) {
+                        queue.push(worker.playerId);
+                    }
+                }
+            }
+        }
+
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIX6',location:'GameEngine.js:rebuildMarketQueuesFromBoard',message:'market queues rebuilt from board state',data:{marketQueues:this.state.marketQueues},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
     }
 }

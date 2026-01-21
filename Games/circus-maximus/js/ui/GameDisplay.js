@@ -90,6 +90,17 @@ export class GameDisplay {
             this.renderActionPanel(state);
             this.initializeActionLog(); // ActionLog is initialized once, then updated via messages
             this.manageBiddingPopup(state); // Manage bidding popup based on phase
+
+            // Auto-select current market resource for buyResources if player is in that queue
+            if (state.currentPhase === 'buyResources' && state.currentMarket) {
+                const marketQueue = state.marketQueues?.[state.currentMarket] || [];
+                const playerInQueue = marketQueue.includes(state.currentPlayer.id);
+                if (playerInQueue) {
+                    this.selectedResourceType = state.currentMarket;
+                } else {
+                    this.selectedResourceType = null;
+                }
+            }
         } catch (error) {
             console.error('Error rendering game display:', error);
             throw error;
@@ -516,7 +527,7 @@ export class GameDisplay {
                     ${!hasResources ? '<span class="resource-warning">⚠ Missing resources</span>' : ''}
                 </div>
                 <div class="selected-act-rewards">
-                    <strong>Rewards:</strong> ${act.coinReward || 0} coins, ${this.formatTrackRewards(act.tracks || {})}
+                    <strong>Rewards:</strong> ${this.formatCoinReward(act.coinReward)}, ${this.formatTrackRewards(act.tracks || {})}
                 </div>
                 ${isParticipating ? `<div class="participating-badge">Your Bid: ${currentPlayerBid.coins} coins</div>` : ''}
             `;
@@ -632,6 +643,20 @@ export class GameDisplay {
         return names[key] || key.charAt(0).toUpperCase() + key.slice(1);
     }
 
+    /**
+     * Format coin reward display
+     */
+    formatCoinReward(coinReward) {
+        if (!coinReward && coinReward !== 0) return '0 coins';
+        if (typeof coinReward === 'string') {
+            if (coinReward === 'perAnimal') {
+                return '1 coin per animal';
+            }
+            return coinReward; // Fallback for other string values
+        }
+        return `${coinReward} coin${coinReward !== 1 ? 's' : ''}`;
+    }
+    
     /**
      * Format track rewards for display
      */
@@ -814,7 +839,7 @@ export class GameDisplay {
                     <div class="act-card-details">
                         <div><strong>Description:</strong> ${selectedAct.description || 'No description'}</div>
                         <div><strong>Resource Cost:</strong> ${selectedAct.resourceCost?.mummers || 0} Mummers, ${selectedAct.resourceCost?.animals || 0} Animals, ${selectedAct.resourceCost?.slaves || 0} Slaves</div>
-                        <div><strong>Coin Reward:</strong> ${selectedAct.coinReward || 0} coins</div>
+                        <div><strong>Coin Reward:</strong> ${this.formatCoinReward(selectedAct.coinReward)}</div>
                         <div><strong>Track Rewards:</strong> ${this.formatTrackRewards(selectedAct.tracks || {})}</div>
                         ${bidsHtml}
                     </div>
@@ -1096,6 +1121,9 @@ export class GameDisplay {
                         e.stopPropagation();
                         if (!state.currentPlayer.isAI && canBuyFromThisMarket) {
                             this.selectedResourceType = resourceType;
+                            // #region agent log
+                            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H9',location:'GameDisplay.js:renderMarkets',message:'resource selected',data:{resourceType, currentMarket:state.currentMarket, marketQueues:state.marketQueues, currentPlayerId:state.currentPlayer.id},timestamp:Date.now()})}).catch(()=>{});
+                            // #endregion
                             this.update();
                         } else if (!state.currentPlayer.isAI && isCurrentMarket && !playerInQueue) {
                             this.showError('You must have a worker in this market to buy resources');

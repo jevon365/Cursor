@@ -28,21 +28,39 @@ export class Board {
 
     /**
      * Get all available spaces for worker placement
+     * @param {number} playerId - The player ID
+     * @param {number} playerCount - Total number of players (for calculating prison capacity)
      */
-    getAvailableSpaces(playerId) {
+    getAvailableSpaces(playerId, playerCount = 2) {
         return this.spaces.filter(space => {
-            const playerPlacements = this.workerPlacements[space.id]?.[playerId] || 0;
-            
-            // Check max workers per player
-            if (space.maxWorkersPerPlayer !== null && playerPlacements >= space.maxWorkersPerPlayer) {
+            // Skip disabled locations (e.g., Gamblers Den in MVP)
+            if (space.disabled === true) {
                 return false;
             }
             
-            // Check max workers total (for Prison - max 6 total)
-            if (space.maxWorkersTotal !== null) {
+            const playerPlacements = this.workerPlacements[space.id]?.[playerId] || 0;
+            
+            // Check max workers per player (for markets)
+            if (space.maxWorkersPerPlayer !== null && space.maxWorkersPerPlayer !== "unlimited" && 
+                typeof space.maxWorkersPerPlayer === 'number' && playerPlacements >= space.maxWorkersPerPlayer) {
+                return false;
+            }
+            
+            // Check max workers total
+            if (space.maxWorkersTotal !== null && space.maxWorkersTotal !== undefined) {
                 const totalWorkers = Object.values(this.workerPlacements[space.id] || {}).reduce((sum, count) => sum + count, 0);
-                if (totalWorkers >= space.maxWorkersTotal) {
-                    return false;
+                
+                // Handle prison: max workers = 2 per player
+                if (space.maxWorkersTotal === "perPlayer") {
+                    const maxWorkers = 2 * playerCount;
+                    if (totalWorkers >= maxWorkers) {
+                        return false;
+                    }
+                } else if (typeof space.maxWorkersTotal === 'number') {
+                    // Regular maxWorkersTotal (like 1 for most action locations)
+                    if (totalWorkers >= space.maxWorkersTotal) {
+                        return false;
+                    }
                 }
             }
             
@@ -52,11 +70,19 @@ export class Board {
 
     /**
      * Place a worker on a space
+     * @param {string} spaceId - The space ID
+     * @param {number} playerId - The player ID
+     * @param {number} playerCount - Total number of players (for calculating prison capacity)
      */
-    placeWorker(spaceId, playerId) {
+    placeWorker(spaceId, playerId, playerCount = 2) {
         const space = this.getSpace(spaceId);
         if (!space) {
             return { success: false, reason: 'Invalid space' };
+        }
+        
+        // Check if location is disabled
+        if (space.disabled === true) {
+            return { success: false, reason: 'Location is disabled' };
         }
         
         // Initialize tracking if needed
@@ -66,16 +92,27 @@ export class Board {
         
         const playerPlacements = this.workerPlacements[spaceId][playerId] || 0;
         
-        // Check max workers per player
-        if (space.maxWorkersPerPlayer !== null && playerPlacements >= space.maxWorkersPerPlayer) {
+        // Check max workers per player (for markets)
+        if (space.maxWorkersPerPlayer !== null && space.maxWorkersPerPlayer !== "unlimited" && 
+            typeof space.maxWorkersPerPlayer === 'number' && playerPlacements >= space.maxWorkersPerPlayer) {
             return { success: false, reason: 'Max workers already placed at this location' };
         }
         
-        // Check max workers total (for Prison - max 6 total)
-        if (space.maxWorkersTotal !== null) {
+        // Check max workers total
+        if (space.maxWorkersTotal !== null && space.maxWorkersTotal !== undefined) {
             const totalWorkers = Object.values(this.workerPlacements[spaceId] || {}).reduce((sum, count) => sum + count, 0);
-            if (totalWorkers >= space.maxWorkersTotal) {
-                return { success: false, reason: 'Maximum workers reached at this location' };
+            
+            // Handle prison: max workers = 2 per player
+            if (space.maxWorkersTotal === "perPlayer") {
+                const maxWorkers = 2 * playerCount;
+                if (totalWorkers >= maxWorkers) {
+                    return { success: false, reason: 'Maximum workers reached at this location' };
+                }
+            } else if (typeof space.maxWorkersTotal === 'number') {
+                // Regular maxWorkersTotal (like 1 for most action locations)
+                if (totalWorkers >= space.maxWorkersTotal) {
+                    return { success: false, reason: 'Maximum workers reached at this location' };
+                }
             }
         }
         

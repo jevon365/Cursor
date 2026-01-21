@@ -53,7 +53,7 @@ export class RoundInfoPanel {
                                 <div class="selected-act-name">${actName}</div>
                                 <div class="selected-act-details">
                                     <div><strong>Cost:</strong> ${this.formatResourceCost(selectedAct.resourceCost)}</div>
-                                    <div><strong>Reward:</strong> ${selectedAct.coinReward || 0} coins</div>
+                                    <div><strong>Reward:</strong> ${this.formatCoinReward(selectedAct.coinReward)}</div>
                                     <div><strong>Tracks:</strong> ${this.formatTrackRewards(selectedAct.tracks)}</div>
                                     <div class="selected-act-bids">
                                         <strong>Total Bids:</strong> ${totalBids} coins
@@ -153,13 +153,16 @@ export class RoundInfoPanel {
                         <div class="info-section event-card">
                             <h3>📜 Event: ${this.escapeHtml(event.name || 'Unknown')}</h3>
                             <p>${this.escapeHtml(event.description || '')}</p>
+                            ${this.formatEventEffects(event)}
                         </div>
                     ` : ''}
                     ${executionAct ? `
                         <div class="info-section execution-act">
                             <h3>⚔️ Mandatory Execution: ${this.escapeHtml(executionAct.name || 'Unknown')}</h3>
                             <p>${this.escapeHtml(executionAct.description || '')}</p>
-                            <p>Requires: ${executionAct.resourceCost?.prisoners || 1} prisoner(s)</p>
+                            <div><strong>Requires:</strong> ${this.formatResourceCost(executionAct.resourceCost)}</div>
+                            <div><strong>Effect:</strong> ${this.formatTrackRewards(executionAct.tracks)}</div>
+                            ${executionAct.coinCost ? `<div><strong>Coin Cost:</strong> ${executionAct.coinCost} coin(s)</div>` : ''}
                         </div>
                     ` : ''}
                 </div>
@@ -171,11 +174,19 @@ export class RoundInfoPanel {
         // Escape act name
         const actName = this.escapeHtml(act.name || act.id);
         
+        // Get full act config for costs
+        const actConfig = this.gameEngine.config?.actCards?.[act.id] || 
+                         this.gameEngine.config?.finalActs?.[act.id] || act;
+        
         return `
             <div class="act-mini-card">
                 <div class="mini-act-name">${actName}</div>
                 <div class="mini-act-details">
-                    ${act.coinReward || 0} coins
+                    <div><strong>Resource Cost:</strong> ${this.formatResourceCost(actConfig.resourceCost)}</div>
+                    ${actConfig.coinCost ? `<div><strong>Coin Cost:</strong> ${actConfig.coinCost} coin(s)</div>` : ''}
+                    <div><strong>Reward:</strong> ${this.formatCoinReward(actConfig.coinReward)}</div>
+                    <div><strong>Tracks:</strong> ${this.formatTrackRewards(actConfig.tracks)}</div>
+                    ${actConfig.hasWinner ? '<div><em>Competitive - Winner gets track advancement</em></div>' : ''}
                 </div>
             </div>
         `;
@@ -207,6 +218,17 @@ export class RoundInfoPanel {
         return parts.join(', ') || 'None';
     }
     
+    formatCoinReward(coinReward) {
+        if (!coinReward && coinReward !== 0) return '0 coins';
+        if (typeof coinReward === 'string') {
+            if (coinReward === 'perAnimal') {
+                return '1 coin per animal';
+            }
+            return coinReward; // Fallback for other string values
+        }
+        return `${coinReward} coin${coinReward !== 1 ? 's' : ''}`;
+    }
+    
     formatTrackRewards(tracks) {
         if (!tracks) return 'None';
         const parts = [];
@@ -214,6 +236,80 @@ export class RoundInfoPanel {
         if (tracks.population) parts.push(`Population: ${tracks.population > 0 ? '+' : ''}${tracks.population}`);
         if (tracks.church) parts.push(`Church: ${tracks.church > 0 ? '+' : ''}${tracks.church}`);
         return parts.join(', ') || 'None';
+    }
+    
+    formatEventEffects(event) {
+        if (!event.effects) return '';
+        
+        const effects = [];
+        const e = event.effects;
+        
+        if (e.trackBlocked && Array.isArray(e.trackBlocked) && e.trackBlocked.length > 0) {
+            effects.push(`<div><strong>Blocks Tracks:</strong> ${e.trackBlocked.join(', ')}</div>`);
+        }
+        
+        if (e.locationDisabled && Array.isArray(e.locationDisabled) && e.locationDisabled.length > 0) {
+            effects.push(`<div><strong>Disables Locations:</strong> ${e.locationDisabled.join(', ')}</div>`);
+        }
+        
+        if (e.marketModify) {
+            const marketChanges = Object.entries(e.marketModify)
+                .map(([type, amount]) => `${amount > 0 ? '+' : ''}${amount} ${type}`)
+                .join(', ');
+            if (marketChanges) {
+                effects.push(`<div><strong>Market Changes:</strong> ${marketChanges}</div>`);
+            }
+        }
+        
+        if (e.marketModifyPerPlayer) {
+            const playerCount = this.gameEngine.state?.players?.length || 2;
+            const marketChanges = Object.entries(e.marketModifyPerPlayer)
+                .map(([type, perPlayer]) => {
+                    const total = perPlayer * playerCount;
+                    return `${total > 0 ? '+' : ''}${total} ${type} (${perPlayer > 0 ? '+' : ''}${perPlayer} per player)`;
+                })
+                .join(', ');
+            if (marketChanges) {
+                effects.push(`<div><strong>Market Changes:</strong> ${marketChanges}</div>`);
+            }
+        }
+        
+        if (e.playerCost) {
+            if (e.playerCost.coins) {
+                effects.push(`<div><strong>Player Cost:</strong> ${e.playerCost.coins} coins each</div>`);
+            }
+        }
+        
+        if (e.playerGain) {
+            if (e.playerGain.coins === 'trackBased') {
+                effects.push(`<div><strong>Player Gain:</strong> Coins equal to Empire track (min 1)</div>`);
+            } else if (typeof e.playerGain.coins === 'number') {
+                effects.push(`<div><strong>Player Gain:</strong> ${e.playerGain.coins} coins each</div>`);
+            }
+        }
+        
+        if (e.trackModify) {
+            const trackChanges = Object.entries(e.trackModify)
+                .map(([track, amount]) => `${track}: ${amount > 0 ? '+' : ''}${amount}`)
+                .join(', ');
+            if (trackChanges) {
+                effects.push(`<div><strong>Track Changes:</strong> ${trackChanges} (all players)</div>`);
+            }
+        }
+        
+        if (e.marketPriceModify) {
+            effects.push(`<div><strong>Price Modifier:</strong> ${e.marketPriceModify > 0 ? '+' : ''}${e.marketPriceModify} to all market prices</div>`);
+        }
+        
+        if (e.workerCostModify) {
+            effects.push(`<div><strong>Worker Cost:</strong> +${e.workerCostModify} coin(s) this round</div>`);
+        }
+        
+        if (e.drawAnotherEvent) {
+            effects.push(`<div><strong>Effect:</strong> Draw another event card</div>`);
+        }
+        
+        return effects.length > 0 ? `<div style="margin-top: 8px; font-size: 0.9em;">${effects.join('')}</div>` : '';
     }
     
     escapeHtml(text) {

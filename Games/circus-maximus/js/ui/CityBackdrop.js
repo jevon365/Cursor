@@ -41,9 +41,13 @@ export class CityBackdrop {
             this.container.innerHTML = '';
             this.locationSpots = {};
             
-            // Create location spots
+            // Create location spots - filter out disabled locations (Gamblers Den, Oracle in MVP)
             locations.forEach(location => {
                 if (location && location.id) {
+                    // Skip disabled locations (not visible in MVP)
+                    if (location.disabled === true) {
+                        return;
+                    }
                     const spot = this.createLocationSpot(location, state);
                     this.container.appendChild(spot);
                     this.locationSpots[location.id] = spot;

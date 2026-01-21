@@ -212,7 +212,7 @@
 /* More opaque on hover for usability */
 .round-info-panel:hover {
     height: auto; /* Auto height on hover */
-    max-height: 150px; /* Maximum height when expanded */
+    max-height: 300px; /* Increased maximum height when expanded to prevent cut-off */
     padding: 16px; /* Full padding on hover */
     background: linear-gradient(
         to top,

@@ -104,6 +104,19 @@ export class EventCardManager {
             }
         }
 
+        // Market modifications per player (scaled by player count)
+        if (effects.marketModifyPerPlayer) {
+            const playerCount = gameState.players.length;
+            for (const [resourceType, perPlayerAmount] of Object.entries(effects.marketModifyPerPlayer)) {
+                const totalAmount = perPlayerAmount * playerCount;
+                if (totalAmount > 0) {
+                    markets.addResources(resourceType, totalAmount);
+                } else if (totalAmount < 0) {
+                    markets.removeResources(resourceType, Math.abs(totalAmount));
+                }
+            }
+        }
+
         // Player costs
         if (effects.playerCost) {
             gameState.players.forEach(player => {

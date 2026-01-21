@@ -202,6 +202,10 @@ export class Phases {
             case 'buyResources':
                 // Clear passed players
                 gameState.clearPassedPlayers();
+                
+                // Note: Market queues are rebuilt from board state in GameEngine before this is called
+                // This ensures queues match actual worker placements (Fix Issue 6)
+                
                 // Initialize first market (mummers, then animals, then slaves)
                 const marketOrder = ['mummers', 'animals', 'slaves'];
                 // Find first market with players in queue
@@ -214,17 +218,44 @@ export class Phases {
                 }
                 gameState.currentMarket = firstMarket;
                 // Set turn order based on current market queue order
-                this.setTurnOrder(gameState, 'market');
+                // Only set turn order if we have a market with players
+                if (firstMarket) {
+                    this.setTurnOrder(gameState, 'market');
+                    // Ensure current player starts at the head of the market queue
+                    if (gameState.turnOrder && gameState.turnOrder.length > 0) {
+                        gameState.currentPlayerIndex = gameState.turnOrder[0];
+                    }
+                    // #region agent log
+                    const queueForMarket = gameState.marketQueues[firstMarket] || [];
+                    const firstPlayerInQueue = queueForMarket[0];
+                    const currentPlayer = gameState.getCurrentPlayer();
+                    fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIRST-PLAYER-BUG',location:'Phases.js:onPhaseStart',message:'buyResources phase start - first player check',data:{firstMarket,marketQueues:gameState.marketQueues,queueForMarket,firstPlayerInQueue,turnOrder:gameState.turnOrder,currentPlayerIndex:gameState.currentPlayerIndex,currentPlayerId:currentPlayer?.id,players:gameState.players.map(p=>({id:p.id,name:p.name}))},timestamp:Date.now()})}).catch(()=>{});
+                    // #endregion
+                } else {
+                    // No players in markets - set default turn order
+                    gameState.turnOrder = gameState.players.map((_, idx) => idx);
+                    gameState.currentPlayerIndex = 0;
+                }
                 break;
             case 'performActs':
                 // Clear passed players (though this phase is automatic)
                 gameState.clearPassedPlayers();
                 // Resolve acts in bid order
+                // Note: This phase should end immediately after acts are resolved
+                // Acts are resolved in GameEngine.endTurn() when shouldEndPhase returns true
                 this.setTurnOrder(gameState, 'bid');
+                // Mark all players as passed so shouldEndPhase returns true when checked
+                // This ensures the phase ends after acts are resolved
+                const allPlayerIndices = gameState.players.map((_, idx) => idx);
+                gameState.passedPlayers = [...allPlayerIndices];
                 break;
             case 'cleanup':
                 // Automatic cleanup - no turn order needed
                 gameState.clearPassedPlayers();
+                // Cleanup phase should end immediately - mark all players as passed
+                // This ensures shouldEndPhase returns true when called
+                const cleanupPlayerIndices = gameState.players.map((_, idx) => idx);
+                gameState.passedPlayers = [...cleanupPlayerIndices];
                 break;
         }
     }
@@ -270,13 +301,39 @@ export class Phases {
                     // No players in current market - use default order
                     orderedIndices = players.map((_, idx) => idx);
                 } else {
+                    // Map market type to location ID
+                    const marketLocationMap = {
+                        'mummers': 'mummersMarket',
+                        'animals': 'animalsMarket',
+                        'slaves': 'slavesMarket'
+                    };
+                    const locationId = marketLocationMap[currentMarket];
+                    
                     // Order players by their position in the current market's queue
+                    // Include ALL players in queue - they can buy multiple times before passing
                     orderedIndices = marketQueue
                         .map(playerId => {
                             const playerIndex = players.findIndex(p => p.id === playerId);
-                            return playerIndex;
+                            if (playerIndex >= 0) {
+                                // Verify player still has worker at this market (warn if not, but include them)
+                                if (locationId && gameState.board) {
+                                    const workerCount = gameState.board.getPlayerWorkersOnSpace(locationId, playerId);
+                                    if (workerCount === 0) {
+                                        // Worker removed but still in queue - this is a sync issue, but include them anyway
+                                        // The validation will catch it when they try to buy
+                                        console.warn(`Player ${playerId} in ${currentMarket} queue but no worker at ${locationId}`);
+                                    }
+                                }
+                                return playerIndex;
+                            }
+                            return -1;
                         })
                         .filter(index => index >= 0); // Only include valid player indices
+                    
+                    // Ensure we have at least one player in turn order
+                    if (orderedIndices.length === 0) {
+                        orderedIndices = players.map((_, idx) => idx);
+                    }
                 }
             }
         } else if (method === 'bid') {
@@ -416,7 +473,12 @@ export class Phases {
                         return queue.length > 0;
                     });
                     // If no markets have players, phase ends immediately
-                    return !hasAnyMarkets;
+                    // (No one can buy resources if no one placed workers at markets)
+                    const shouldEnd = !hasAnyMarkets;
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H8',location:'Phases.js:shouldEndPhase',message:'buyResources shouldEndPhase: no current market',data:{currentMarket:gameState.currentMarket,hasAnyMarkets,shouldEnd,marketQueues:gameState.marketQueues},timestamp:Date.now()})}).catch(()=>{});
+                    // #endregion
+                    return shouldEnd;
                 }
                 
                 // Check if all markets have been resolved
@@ -429,6 +491,10 @@ export class Phases {
                         const playerIndex = gameState.players.findIndex(p => p.id === playerId);
                         return playerIndex >= 0 && gameState.hasPlayerPassed(playerIndex);
                     });
+                
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H8',location:'Phases.js:shouldEndPhase',message:'buyResources shouldEndPhase check',data:{currentMarket:gameState.currentMarket,currentMarketQueue,allPassedInCurrentMarket,passedPlayers:gameState.passedPlayers,currentPlayerIndex:gameState.currentPlayerIndex,turnOrder:gameState.turnOrder},timestamp:Date.now()})}).catch(()=>{});
+                // #endregion
                 
                 if (allPassedInCurrentMarket) {
                     // Check if there are more markets to resolve
@@ -449,6 +515,8 @@ export class Phases {
                 
             case 'performActs':
                 // Automatic phase - ends after acts are resolved
+                // Acts are resolved in GameEngine.endTurn() BEFORE this check
+                // So when we get here, acts have been resolved and phase should end
                 return true;
             case 'cleanup':
                 // Automatic phase - ends after cleanup is complete

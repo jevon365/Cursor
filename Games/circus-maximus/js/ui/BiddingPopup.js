@@ -164,7 +164,8 @@ export class BiddingPopup {
         }
         
         const availableActs = this.gameEngine.acts?.getAvailableActs() || { regular: [], execution: [] };
-        const allActs = [...availableActs.regular, ...availableActs.execution];
+        // Execution acts are mandatory and cannot be bid on - only show regular acts
+        const allActs = [...availableActs.regular];
         
         const body = this.popupElement.querySelector('#bidding-popup-body');
         const footer = this.popupElement.querySelector('#bidding-popup-footer');
@@ -254,7 +255,7 @@ export class BiddingPopup {
                 ${description ? `<div class="bidding-act-card-description">${description}</div>` : ''}
                 <div class="bidding-act-card-details">
                     <div><strong>Cost:</strong> ${this.formatResourceCost(act.resourceCost)}</div>
-                    <div><strong>Reward:</strong> ${act.coinReward || 0} coins</div>
+                    <div><strong>Reward:</strong> ${this.formatCoinReward(act.coinReward)}</div>
                     <div><strong>Tracks:</strong> ${this.formatTrackRewards(act.tracks)}</div>
                     <div class="bidding-act-bids">
                         <strong>Total Bids:</strong> ${totalBids} coins
@@ -311,7 +312,8 @@ export class BiddingPopup {
         
         if (actIdToBid) {
             const availableActs = this.gameEngine.acts?.getAvailableActs() || { regular: [], execution: [] };
-            const allActs = [...availableActs.regular, ...availableActs.execution];
+            // Execution acts are mandatory and cannot be bid on - only check regular acts
+            const allActs = [...availableActs.regular];
             const act = allActs.find(a => a.id === actIdToBid);
             actNameToSubmit = act ? (act.name || act.id) : actIdToBid;
         }
@@ -548,10 +550,29 @@ export class BiddingPopup {
      * Handle pass action
      */
     handlePass(state) {
+        // Prevent double-clicks and stale clicks
+        if (!this.isVisible) {
+            return; // Popup already hidden, ignore click
+        }
+        
+        // Get fresh state from game engine (don't trust passed state - it might be stale)
+        const freshState = this.gameEngine.getState();
+        
+        // Guard: only allow pass during bidOnActs
+        if (freshState.currentPhase !== 'bidOnActs') {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H7',location:'BiddingPopup.js:handlePass',message:'pass ignored: wrong phase',data:{currentPhase:freshState.currentPhase,currentPlayerIndex:freshState.currentPlayerIndex,turnOrder:freshState.turnOrder},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
+            // Hide popup immediately if phase changed
+            this.hide();
+            // Don't show alert - phase already changed, this is expected
+            return;
+        }
+
         // Check if first player must bid
-        const turnOrder = state.turnOrder || state.players.map((_, idx) => idx);
-        const isFirstPlayer = state.currentPlayerIndex === turnOrder[0];
-        const hasPlacedBid = state.currentPlayer.bids && state.currentPlayer.bids.length > 0;
+        const turnOrder = freshState.turnOrder || freshState.players.map((_, idx) => idx);
+        const isFirstPlayer = freshState.currentPlayerIndex === turnOrder[0];
+        const hasPlacedBid = freshState.currentPlayer.bids && freshState.currentPlayer.bids.length > 0;
         
         if (isFirstPlayer && !hasPlacedBid) {
             alert('First player must place at least one bid before passing.');
@@ -564,6 +585,9 @@ export class BiddingPopup {
         
         // Execute through game controls
         if (window.gameControls) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H7',location:'BiddingPopup.js:handlePass',message:'pass clicked',data:{currentPlayerIndex:freshState.currentPlayerIndex,turnOrder:freshState.turnOrder,currentPhase:freshState.currentPhase},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
             const result = window.gameControls.handleAction(action);
             if (result && result.success !== false) {
                 // Clear all bid amounts after passing (turn ends)
@@ -575,8 +599,8 @@ export class BiddingPopup {
                     window.gameDisplay.selectedActId = null;
                     window.gameDisplay.bidAmount = 0;
                 }
-                // Update display (popup will close when turn ends)
-                this.render();
+                // Hide popup immediately after successful pass (phase may end)
+                this.hide();
             }
         }
     }
@@ -631,6 +655,20 @@ export class BiddingPopup {
         if (tracks.population) parts.push(`Population: ${tracks.population > 0 ? '+' : ''}${tracks.population}`);
         if (tracks.church) parts.push(`Church: ${tracks.church > 0 ? '+' : ''}${tracks.church}`);
         return parts.join(', ') || 'None';
+    }
+    
+    /**
+     * Format coin reward display
+     */
+    formatCoinReward(coinReward) {
+        if (!coinReward && coinReward !== 0) return '0 coins';
+        if (typeof coinReward === 'string') {
+            if (coinReward === 'perAnimal') {
+                return '1 coin per animal';
+            }
+            return coinReward; // Fallback for other string values
+        }
+        return `${coinReward} coin${coinReward !== 1 ? 's' : ''}`;
     }
     
     /**

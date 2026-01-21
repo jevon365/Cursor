@@ -1,321 +1,148 @@
-# Circus Maximus - Tabletop Simulation
+# 🎪 Circus Maximus - Tabletop Game Simulation
 
-A web-based tabletop simulation of the Circus Maximus board game, featuring AI opponents and automated playtesting capabilities for game balance analysis.
+A fully-featured web-based simulation of the **Circus Maximus** board game, built with vanilla JavaScript. Play against AI opponents in this strategic worker-placement game set in ancient Rome, where you compete for favor across three victory tracks: Empire, Population, and Church.
 
-## For Cursor AI Agents
+![Status](https://img.shields.io/badge/status-MVP-green)
+![Tech](https://img.shields.io/badge/tech-Vanilla%20JS-blue)
 
-This README serves as a reference guide for AI agents working on this codebase. Read this first to understand the project structure, game mechanics, and implementation status.
+## 🎮 Live Demo
 
----
+*[Add your GitHub Pages link here once deployed]*
 
-## Game Overview
+## ✨ Features
 
-**Circus Maximus** is a worker placement board game for 2-4 players set in ancient Rome. Players compete to perform circus acts for Rome, managing resources and gaining favor across three victory tracks: **Empire**, **Population**, and **Church**.
+- **Complete Game Implementation**: Full 5-phase gameplay with all mechanics from the original board game
+- **AI Opponents**: Play against intelligent AI players with configurable difficulty levels
+- **Beautiful UI**: Modern, responsive interface with visual feedback and intuitive controls
+- **Save/Load System**: Save your game progress and resume anytime
+- **Automated Playtesting**: Built-in playtesting engine for game balance analysis
+- **No Dependencies**: Pure vanilla JavaScript - no frameworks or build tools required
 
-### Core Game Mechanics
+## 🎯 Project Overview
 
-1. **5 Phases per Round:**
-   - **Bid on Acts**: Players bid coins on act cards (Empire track leader goes first)
-   - **Place Workers**: Workers placed at locations (Population track leader goes first)
-   - **Buy Resources**: Purchase from supply/demand markets (order by market queue)
-   - **Perform Acts**: Resolve act cards, award coins and track movement
-   - **Cleanup**: Reset workers/bids, restock markets, check win conditions
+This project is a complete implementation of a complex board game simulation, built from the ground up with vanilla JavaScript. The architecture emphasizes clean separation of concerns, with modular game logic, AI decision-making, and UI components. All game mechanics are configuration-driven, making it easy to adjust balance and test different game variants.
 
-2. **Resources:**
-   - **Coins**: Currency for bidding and purchasing
-   - **Workers**: Placed at locations to perform actions
-   - **Mummers, Animals, Slaves**: Purchased from markets for act participation
-   - **Prisoners**: Acquired from prison, used in final execution acts
+**Key Technical Achievements:**
+- **Phase-based game engine** with serializable state management
+- **AI opponent system** with configurable difficulty levels and strategic decision-making
+- **Automated playtesting framework** for game balance analysis
+- **Zero-dependency architecture** - pure ES6 modules, no build tools required
 
-3. **Victory Tracks:**
-   - **Empire**: Track favor with the empire
-   - **Population**: Track favor with the people
-   - **Church**: Track favor with the church
-   - Each track ranges from -10 to 20
-   - Win condition: Reach 20 on any track OR highest total after 10 rounds
+## 🛠️ Technologies
 
-4. **Market System:**
-   - Supply/demand pricing: Resources bought left-to-right (cheapest to most expensive)
-   - Price tiers: [1,2,3,4,5] for Mummers, [2,3,4,5,6] for Animals, [3,4,5,6,7] for Slaves
-   - Restocks during cleanup based on player count
+- **Vanilla JavaScript** (ES6+ modules)
+- **HTML5 & CSS3**
+- **No build tools or dependencies** - runs directly in the browser
+- **GitHub Pages ready** - deploy with zero configuration
 
-5. **Act Cards:**
-   - Players bid coins to participate in acts
-   - Acts reward coins and move victory tracks
-   - Some acts have winners (random selection), some don't
-   - Non-participants may be penalized on tracks
-   - Resources may be consumed or returned based on act type
+## 🚀 Getting Started
 
----
+### Quick Start (Play Locally)
 
-## Project Structure
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/circus-maximus.git
+   cd circus-maximus
+   ```
 
-```
-circus-maximus/
-├── README.md                    # This file
-├── IMPLEMENTATION_STATUS.md     # Detailed implementation status
-├── .gitignore                   # Git ignore rules
-├── .cursorrules                 # Cursor AI rules for this project
-├── index.html                   # Main game page
-├── css/
-│   └── style.css               # Game styles
-├── js/
-│   ├── main.js                 # Entry point
-│   ├── game/                   # Core game logic
-│   │   ├── GameEngine.js      # Main game loop and action execution
-│   │   ├── GameState.js        # Game state management (serializable)
-│   │   ├── Player.js           # Player class with resources and tracks
-│   │   ├── Board.js            # Board and location management
-│   │   ├── Phases.js           # Phase management and turn order
-│   │   └── Market.js           # Supply/demand market system
-│   ├── ai/                     # AI implementation
-│   │   ├── AIPlayer.js         # AI player wrapper
-│   │   ├── PlaytestEngine.js   # Automated playtesting
-│   │   └── strategies/
-│   │       └── BasicStrategy.js # AI decision-making
-│   ├── ui/                     # User interface
-│   │   ├── UIManager.js        # UI coordination
-│   │   ├── GameDisplay.js      # Game state rendering
-│   │   └── GameControls.js      # User input handling
-│   └── utils/                  # Utilities
-│       ├── config.js           # All game configuration values
-│       └── rules.js            # Rule validation
-└── rulebook/
-    ├── rulebook.md             # Markdown rulebook (placeholder)
-    └── rulebook print.pdf      # PDF rulebook (reference)
-```
+2. **Start a local server** (required for ES6 modules)
 
----
-
-## Key Architecture Decisions
-
-### 1. **Pure Game State**
-- `GameState` is serializable (save/load support)
-- All game logic in `GameEngine` (no UI dependencies)
-- State is immutable from UI perspective (read-only access)
-
-### 2. **Configuration-Driven Design**
-- All numeric values in `js/utils/config.js`
-- Easy to adjust for playtesting
-- Values organized by mechanic/phase
-
-### 3. **Phase-Based System**
-- `Phases.js` manages all phase logic
-- Turn order changes per phase (track leaders, market queues)
-- Phase transitions handled automatically
-
-### 4. **Turn Order Management**
-- **Critical**: Never mutate the `players` array directly
-- Use `gameState.turnOrder` array (indices into players array)
-- Set via `Phases.setTurnOrder()` which returns ordered indices
-- Prevents player ID confusion and save/load issues
-
-### 5. **Market System**
-- Left-to-right pricing (cheapest first)
-- Resources marked as `available: false` when sold
-- Restock adds new resources, doesn't reset sold ones
-- Restock happens during cleanup phase (before phase end)
-
-### 6. **Worker Placement**
-- One worker per location per player (except prison)
-- Prison has stock system (unlimited until depleted)
-- Workers reset during cleanup phase
-
----
-
-## Implementation Status
-
-### ✅ Completed
-
-- **Core Framework**: All game classes implemented with basic structure
-- **5 Phases**: All phases defined with turn order logic
-- **Victory Tracks**: 3 tracks (Empire, Population, Church) fully implemented
-- **Market System**: Supply/demand system with restocking
-- **Player Resources**: All resource types tracked
-- **Locations**: 8 locations defined (prison, arena, temple, palace, forum, training grounds, slums, barracks)
-- **Win Conditions**: Track threshold and round limit implemented
-- **Bidding System**: Structure in place (needs act card integration)
-- **Bug Fixes**: All critical bugs fixed (see commit history)
-
-### ⏳ Pending (Needs Rulebook Data)
-
-- **Act Cards**: ✅ All 15 regular acts + 3 execution acts defined in config.js
-- **Location Effects**: Locations defined but effects not implemented
-- **Phase End Conditions**: ✅ Fixed - tracks passed players, ends when all pass
-- **Market Queue Order**: Queue tracking for buyResources phase (placeholder)
-- **Bid Order Tracking**: For performActs phase ordering (placeholder)
-- **Final Act Selection**: One of three execution acts per round
-- **Success/Failure Mechanics**: Random outcomes for worker actions
-
-### 📋 TODO
-
-1. ~~**Extract act cards from rulebook**~~ - ✅ Done - All acts in config.js
-2. **Implement location effects** - What happens when workers are placed
-3. ~~**Complete phase end logic**~~ - ✅ Done - Passed player tracking implemented
-4. ~~**Implement act resolution**~~ - ✅ Done - ActCardManager.resolveAct() handles all rewards
-5. **Add final act selection** - Randomly select one execution act per round
-6. **Implement worker action outcomes** - Success/failure mechanics
-7. **Complete AI strategy** - Decision-making for all phases
-8. **UI Integration** - Connect UI to game engine actions (build interactive buttons/forms)
-
----
-
-## Important Code Patterns
-
-### Adding a New Location
-
-1. Add to `config.js` under `locations`:
-```javascript
-newLocation: {
-    name: "Location Name",
-    maxWorkersPerPlayer: 1,
-    type: "action", // or "stock"
-    description: "What this location does"
-}
-```
-
-2. Board.js automatically picks it up from config
-
-### Adding a New Phase Action
-
-1. Add action type to `Phases.getAvailableActions()`
-2. Add validation in `Phases.validateAction()`
-3. Add execution logic in `GameEngine.executeAction()`
-
-### Modifying Turn Order
-
-**Never do this:**
-```javascript
-gameState.players.sort(...) // ❌ Mutates player array
-```
-
-**Always do this:**
-```javascript
-gameState.turnOrder = players.map(...).sort(...).map(...) // ✅ Returns indices
-```
-
-### Market Restocking
-
-- Called in `GameEngine.endTurn()` before cleanup phase ends
-- Only adds new resources, doesn't reset sold ones
-- Restock amount = `restockRate * playerCount`
-
-### Worker Cleanup
-
-**Correct order:**
-```javascript
-p.workers.available += p.workers.placed; // Return workers first
-p.workers.placed = 0; // Then reset
-```
-
----
-
-## Configuration File (`js/utils/config.js`)
-
-**All game values are here.** Organized by:
-- `setup`: Starting resources, tracks, player limits
-- `victoryTracks`: Track min/max values and thresholds
-- `phases`: Phase definitions and turn order rules
-- `locations`: All worker placement locations
-- `resources`: Resource type definitions
-- `markets`: Market configuration (prices, supply, restock rates)
-- `winConditions`: Victory conditions and tiebreakers
-- `limits`: Game limits (workers, bids, etc.)
-- `bidding`: Bidding rules
-
-**When adjusting game balance, edit this file.**
-
----
-
-## Common Pitfalls
-
-1. **Mutating players array**: Use `turnOrder` instead
-2. **Market restock timing**: Must be before cleanup phase ends
-3. **Worker reset order**: Return to available before resetting placed
-4. **Missing Player import**: GameState needs Player import for deserialization
-5. **Bidding validation**: Check pass action separately from bid action
-
----
-
-## Testing the Game
-
-### Local Development (Your Computer)
-
-**⚠️ IMPORTANT: You cannot open `index.html` directly** - ES6 modules require a web server.
-
-**Easiest Options (pick one):**
-
-1. **VS Code Live Server** (Recommended - no installation needed)
-   - Install "Live Server" extension
+   **Option A: VS Code Live Server** (Recommended)
+   - Install the "Live Server" extension
    - Right-click `index.html` → "Open with Live Server"
 
-2. **Double-click `start-server.bat`** (Windows)
-   - Tries Python, then Node.js automatically
-   - Opens browser automatically
-
-3. **Command Line:**
+   **Option B: Python**
    ```bash
-   python server.py    # If you have Python
-   # OR
-   node server.js      # If you have Node.js
+   python server.py
    ```
    Then open: `http://localhost:8000/index.html`
 
-### Hosting on GitHub Pages
+   **Option C: Node.js**
+   ```bash
+   node server.js
+   ```
+   Then open: `http://localhost:8000/index.html`
 
-**No server needed!** Just push your code and enable GitHub Pages in repository settings.
+   **Option D: Windows Batch File**
+   - Double-click `start-server.bat`
 
-1. Push code to GitHub
-2. Settings → Pages → Select branch
-3. Game is live at `https://yourusername.github.io/repo-name/`
+### Deploy to GitHub Pages
 
----
+1. Push your code to GitHub
+2. Go to Settings → Pages
+3. Select your branch (usually `main` or `master`)
+4. Your game will be live at `https://yourusername.github.io/circus-maximus/`
 
-## Working with the Rulebook
+## 📁 Project Structure
 
-- **PDF**: `rulebook/rulebook print.pdf` - Original rulebook (reference)
-- **Markdown**: `rulebook/rulebook.md` - Editable version (currently placeholder)
+```
+circus-maximus/
+├── index.html              # Main game page
+├── css/                    # Stylesheets
+├── js/
+│   ├── game/              # Core game logic (GameEngine, GameState, etc.)
+│   ├── ai/                # AI opponent implementation
+│   ├── ui/                # User interface components
+│   └── utils/             # Configuration and utilities
+├── playtesting/           # Automated playtesting tools
+└── rulebook/              # Game rulebook reference
+```
 
-**When extracting data:**
-- Add to `config.js` with comments linking to rulebook sections
-- Update `IMPLEMENTATION_STATUS.md` when completing features
-- Keep config values organized by mechanic
+## 🎨 Architecture & Design
 
----
+- **Modular Game Engine**: Core game logic (`GameEngine`, `GameState`) completely decoupled from UI, enabling headless playtesting
+- **Immutable State Pattern**: Game state is serializable JSON, enabling save/load and state snapshots for debugging
+- **Configuration-Driven Design**: All game mechanics, values, and rules centralized in `config.js` for easy iteration
+- **Phase-Based System**: Turn order and available actions managed per-phase with automatic transitions
+- **Strategy Pattern for AI**: Pluggable strategy system allows for multiple AI implementations and difficulty levels
 
-## Development Notes
+## 🤖 AI Implementation
 
-- **No build step**: Vanilla JavaScript, edit and refresh
-- **No dependencies**: Pure browser APIs
-- **Save/Load**: Game state is JSON-serializable
-- **AI Ready**: Framework in place, needs game-specific logic
-- **Playtesting**: Infrastructure ready for data collection
+The AI system uses a **strategy-based architecture** with heuristic evaluation and difficulty scaling:
 
----
+- **BasicStrategy Class**: Makes decisions using scoring heuristics that evaluate game state, resource availability, and victory conditions
+- **Difficulty Levels**: Three difficulty levels (easy, medium, hard) that adjust decision quality through a randomness parameter
+- **Phase-Aware Decision Making**: AI evaluates different strategies for each game phase (bidding, worker placement, resource purchasing)
+- **Heuristic Scoring**: Acts, locations, and market purchases are scored based on:
+  - Victory track progression (weighted higher when close to winning)
+  - Resource efficiency and availability
+  - Coin management and bidding strategy
+  - Risk assessment for worker placement actions
 
-## For Future Agents
+**Status**: ⏳ *Work in Progress* - Core framework implemented with basic strategy. Advanced tactics and look-ahead planning are planned for future iterations.
 
-**Before making changes:**
-1. Read this README completely
-2. Check `IMPLEMENTATION_STATUS.md` for current state
-3. Review `config.js` to understand game values
-4. Check commit history for recent fixes/patterns
+## 🧪 Testing & Playtesting
 
-**When implementing features:**
-1. Follow existing patterns (see "Important Code Patterns")
-2. Update config.js for new values
-3. Add validation in appropriate classes
-4. Test serialization still works
-5. Update IMPLEMENTATION_STATUS.md
+The project includes an **automated playtesting engine** designed for game balance analysis:
 
-**When fixing bugs:**
-1. Check "Common Pitfalls" section
-2. Ensure turn order isn't mutated
-3. Verify phase transitions work correctly
-4. Test with save/load functionality
+- **PlaytestEngine**: Runs AI vs AI games automatically to collect gameplay data
+- **Data Collection**: Tracks game outcomes, resource usage, victory track progression, and win conditions
+- **Statistical Analysis**: Collects metrics on game length, player performance, and balance indicators
+- **Configurable Testing**: Can run multiple games with different player counts and difficulty levels
+- **Export Capabilities**: Data can be exported for analysis in external tools (R, Tableau, etc.)
 
----
+**Status**: ⏳ *Work in Progress* - Infrastructure complete, data analysis tools and reporting features are being developed.
 
-## License
+## 📊 Development Status
+
+This project is in **MVP status** with all core gameplay mechanics implemented:
+
+✅ Complete 5-phase game loop  
+✅ All 11 locations with full effects  
+✅ Victory track system  
+✅ Supply/demand market mechanics  
+✅ AI opponent framework  
+✅ Save/load functionality  
+✅ Automated playtesting infrastructure  
+
+## 🤝 Contributing
+
+This is a personal portfolio project. If you'd like to contribute or have suggestions, feel free to open an issue!
+
+## 📝 License
 
 Personal project - all rights reserved.
+
+---
+
+**For developers working on this project**, see [`DEVELOPMENT.md`](DEVELOPMENT.md) for detailed technical documentation, architecture decisions, and development guidelines.

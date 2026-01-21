@@ -93,7 +93,7 @@ export const CONFIG = {
     locations: {
         port: {
             name: "Port",
-            maxWorkersPerPlayer: 1,
+            maxWorkersTotal: 1, // Only 1 total worker allowed at this location
             type: "action",
             effectType: "coinFlip", // Port, War, Forest use coin flips
             coinFlipReward: { mummers: 2 }, // Heads: gain 2 mummers from supply
@@ -102,7 +102,7 @@ export const CONFIG = {
         },
         war: {
             name: "War",
-            maxWorkersPerPlayer: 1,
+            maxWorkersTotal: 1, // Only 1 total worker allowed at this location
             type: "action",
             effectType: "coinFlip",
             coinFlipReward: { slaves: 2 }, // Heads: gain 2 slaves from supply
@@ -111,14 +111,16 @@ export const CONFIG = {
         },
         gamblersDen: {
             name: "Gamblers Den",
-            maxWorkersPerPlayer: 1,
+            maxWorkersTotal: 1,
             type: "action",
             effectType: "betting", // Not yet implemented
-            description: "Play the odds on upcoming circus acts"
+            disabled: true, // Disabled for MVP
+            description: "Play the odds on upcoming circus acts (Not available in MVP)"
         },
         prison: {
             name: "Prison",
-            maxWorkersTotal: 6, // Max 6 workers total (all players combined)
+            maxWorkersTotal: "perPlayer", // Max workers = 2 per player (calculated dynamically)
+            maxWorkersPerPlayer: "unlimited", // Players can place multiple workers here per turn
             type: "action",
             effectType: "gainResource", // Gain 1 prisoner from supply
             resourceGain: { prisoners: 1 },
@@ -148,7 +150,7 @@ export const CONFIG = {
         },
         forest: {
             name: "Forest",
-            maxWorkersPerPlayer: 1,
+            maxWorkersTotal: 1, // Only 1 total worker allowed at this location
             type: "action",
             effectType: "coinFlip",
             coinFlipReward: { animals: 2 }, // Heads: gain 2 animals from supply
@@ -157,7 +159,7 @@ export const CONFIG = {
         },
         townSquare: {
             name: "Town Square",
-            maxWorkersPerPlayer: 1,
+            maxWorkersTotal: 1, // Only 1 total worker allowed at this location
             type: "action",
             effectType: "trackMovement", // Move up 1 on Population track
             trackMovement: { population: 1 },
@@ -165,7 +167,7 @@ export const CONFIG = {
         },
         palace: {
             name: "Palace",
-            maxWorkersPerPlayer: 1,
+            maxWorkersTotal: 1, // Only 1 total worker allowed at this location
             type: "action",
             effectType: "trackMovement", // Move up 1 on Empire track
             trackMovement: { empire: 1 },
@@ -174,7 +176,7 @@ export const CONFIG = {
         },
         pantheon: {
             name: "Pantheon",
-            maxWorkersPerPlayer: 1,
+            maxWorkersTotal: 1, // Only 1 total worker allowed at this location
             type: "action",
             effectType: "trackMovement", // Move up 1 on Church track
             trackMovement: { church: 1 },
@@ -182,7 +184,7 @@ export const CONFIG = {
         },
         guildhall: {
             name: "Guildhall",
-            maxWorkersPerPlayer: 1,
+            maxWorkersTotal: 1, // Only 1 total worker allowed at this location
             type: "action",
             effectType: "resourceConversion", // Return 1 slave + 5 coins = gain 1 worker
             conversionCost: { slaves: 1, coins: 5 },
@@ -191,11 +193,12 @@ export const CONFIG = {
         },
         oracle: {
             name: "Oracle",
-            maxWorkersPerPlayer: 1,
+            maxWorkersTotal: 1, // Only 1 total worker allowed at this location
             type: "action",
             effectType: "information", // Return 1 animal = peek at event deck
             informationCost: { animals: 1 },
-            description: "Learn the future by sacrificing an animal"
+            disabled: true, // Disabled for MVP - UI display not fully implemented
+            description: "Learn the future by sacrificing an animal (Not available in MVP)"
         }
     },
 
@@ -271,21 +274,21 @@ export const CONFIG = {
             tracks: { church: 1, population: 1 },
             hasWinner: false,
             consumesResources: false,
-            coinReward: 2,
+            coinReward: 0,
             nonParticipantPenalty: { church: -1 },
             description: "Religious hymns and choral music performed for the faithful"
         },
         religious_play: {
             id: "religious_play",
-            name: "Religious Play",
+            name: "Pageant",
             coinCost: 0,
             resourceCost: { mummers: 2 },
-            tracks: { church: 2, empire: 1 },
-            hasWinner: true,
+            tracks: { church: 2 },
+            hasWinner: false,
             consumesResources: false,
             coinReward: 3,
             nonParticipantPenalty: { church: -1 },
-            description: "Mystery plays and religious dramas depicting sacred stories"
+            description: "Religious pageants and ceremonies depicting sacred stories"
         },
         procession_martyrs: {
             id: "procession_martyrs",
@@ -294,7 +297,7 @@ export const CONFIG = {
             resourceCost: { mummers: 1, slaves: 1 },
             tracks: { church: 3, population: -1 },
             hasWinner: false,
-            consumesResources: true, // Both mummers and slaves consumed (slaves die in reenactment)
+            consumesResources: { slaves: true }, // Slaves consumed (die in reenactment), mummers returned
             coinReward: 4,
             nonParticipantPenalty: { church: -2 },
             description: "Reenactment of Christian martyrdoms, demonstrating faith"
@@ -307,13 +310,14 @@ export const CONFIG = {
             tracks: { church: 2 },
             hasWinner: true,
             consumesResources: false,
-            coinReward: 2,
+            coinReward: 4, // Winner gets 4 coins
+            loserCoinReward: 2, // Losers get 2 coins
             nonParticipantPenalty: { church: -1 },
             description: "Competitive singing of hymns for religious festivals"
         },
         sacred_music: {
             id: "sacred_music",
-            name: "Sacred Music Festival",
+            name: "Sacred Festival",
             coinCost: 1,
             resourceCost: { mummers: 2 },
             tracks: { church: 3, population: 1 },
@@ -329,11 +333,11 @@ export const CONFIG = {
             id: "gladiator_combat",
             name: "Gladiator Combat",
             coinCost: 0,
-            resourceCost: { slaves: 2 },
-            tracks: { population: 3, empire: 1 },
+            resourceCost: { slaves: 1 },
+            tracks: { population: 2 },
             hasWinner: true,
             consumesResources: true, // Loser's slaves die, winner's slaves return
-            coinReward: 5,
+            coinReward: 3,
             nonParticipantPenalty: { population: -2 },
             description: "Classic gladiatorial combat to the death"
         },
@@ -343,9 +347,9 @@ export const CONFIG = {
             coinCost: 0,
             resourceCost: { animals: 1, slaves: 1 },
             tracks: { population: 3, church: -1 },
-            hasWinner: true,
-            consumesResources: true, // Loser's resources consumed, winner's returned
-            coinReward: 6,
+            hasWinner: false,
+            consumesResources: { slaves: true }, // Only slaves consumed, animals returned
+            coinReward: 5,
             nonParticipantPenalty: { population: -2 },
             description: "Beast fighters battle wild animals in the arena"
         },
@@ -354,7 +358,7 @@ export const CONFIG = {
             name: "Venatio (Animal Hunt)",
             coinCost: 0,
             resourceCost: { animals: 2 },
-            tracks: { population: 2, empire: 1 },
+            tracks: { population: 2 },
             hasWinner: false,
             consumesResources: true, // Animals killed
             coinReward: 4,
@@ -364,11 +368,11 @@ export const CONFIG = {
         animal_feeding: {
             id: "animal_feeding",
             name: "Animal Feeding",
-            coinCost: 0,
+            coinCost: 2,
             resourceCost: { animals: 2 }, // No prisoners in regular acts
-            tracks: { population: 3, church: -1 },
+            tracks: { population: 2, church: 1 },
             hasWinner: false,
-            consumesResources: true, // Animals consumed
+            consumesResources: false, // Resources returned
             coinReward: 5,
             nonParticipantPenalty: { population: -2 },
             description: "Feeding slaves to wild animals for public spectacle"
@@ -378,7 +382,7 @@ export const CONFIG = {
             name: "Slave Battle Royale",
             coinCost: 0,
             resourceCost: { slaves: 3 },
-            tracks: { population: 4, empire: 1 },
+            tracks: { population: 3, empire: 2 },
             hasWinner: true,
             consumesResources: true, // Loser's slaves die (all 3), winner's return
             coinReward: 7,
@@ -391,11 +395,12 @@ export const CONFIG = {
             id: "chariot_race",
             name: "Chariot Race",
             coinCost: 0,
-            resourceCost: { animals: 2 }, // Horses
-            tracks: { empire: 3, population: 2 },
+            resourceCost: { animals: 2, mummers: 1 }, // Horses and driver
+            tracks: { empire: 3, population: 1 },
             hasWinner: true,
-            consumesResources: false, // Horses return
-            coinReward: 6,
+            consumesResources: false, // Resources return
+            coinReward: 5, // Winner gets track advancement + coins, losers also get coins
+            loserCoinReward: 5, // Losers get coins too
             nonParticipantPenalty: { empire: -1 },
             description: "The most popular Roman spectacle - chariot racing"
         },
@@ -404,10 +409,11 @@ export const CONFIG = {
             name: "Ludi Militaris (War Games)",
             coinCost: 0,
             resourceCost: { slaves: 2 },
-            tracks: { empire: 4, population: 1 },
+            tracks: { empire: 3, population: 1 },
             hasWinner: true,
             consumesResources: true, // Loser's slaves die, winner's return
-            coinReward: 7,
+            coinReward: 7, // Winner gets track advancement + coins
+            loserCoinReward: 7, // Losers get coins too
             nonParticipantPenalty: { empire: -2 },
             description: "Reenactment of famous military battles"
         },
@@ -416,10 +422,10 @@ export const CONFIG = {
             name: "Triumph Parade",
             coinCost: 0,
             resourceCost: { mummers: 2, animals: 1 },
-            tracks: { empire: 3, population: 2 },
+            tracks: { empire: 2, church: 1 },
             hasWinner: false,
             consumesResources: false,
-            coinReward: 5,
+            coinReward: 3,
             nonParticipantPenalty: { empire: -1 },
             description: "Victory procession celebrating military conquest"
         },
@@ -428,10 +434,11 @@ export const CONFIG = {
             name: "Cavalry Display",
             coinCost: 0,
             resourceCost: { animals: 2 },
-            tracks: { empire: 2, population: 1 },
-            hasWinner: false,
+            tracks: { empire: 1, church: 1 },
+            hasWinner: true,
+            winnerDeterminedBy: "mostAnimals", // Winner is player with most total animals
             consumesResources: false,
-            coinReward: 4,
+            coinReward: "perAnimal", // 1 coin per animal for all participants
             nonParticipantPenalty: { empire: -1 },
             description: "Military horse demonstrations showcasing imperial power"
         },
@@ -443,7 +450,8 @@ export const CONFIG = {
             tracks: { empire: 4, population: 2 }, // High reward for high cost
             hasWinner: true,
             consumesResources: true, // Loser's slaves die, winner's return
-            coinReward: 8,
+            coinReward: 8, // Winner gets track advancement + coins
+            loserCoinReward: 8, // All participants receive coins regardless of victory
             nonParticipantPenalty: { empire: -2, population: -1 },
             description: "Staged sea battles in flooded arenas - the ultimate spectacle"
         }
@@ -458,35 +466,35 @@ export const CONFIG = {
             name: "Public Torture",
             coinCost: 0,
             resourceCost: { prisoners: 1 },
-            tracks: { empire: 2 },
+            tracks: { population: 1 },
             hasWinner: false,
             consumesResources: true, // Prisoner consumed
-            coinReward: 3,
-            nonParticipantPenalty: { empire: -1 },
-            description: "Public torture demonstration of imperial authority"
+            coinReward: 0,
+            nonParticipantPenalty: {}, // No penalty for non-participants
+            description: "Public torture demonstration for the masses"
         },
         military_execution: {
             id: "military_execution",
             name: "Military Execution",
             coinCost: 0,
             resourceCost: { prisoners: 1 },
-            tracks: { population: 2 },
+            tracks: { empire: 1 },
             hasWinner: false,
             consumesResources: true, // Prisoner consumed
-            coinReward: 3,
-            nonParticipantPenalty: { population: -1 },
-            description: "Public execution by military methods for the masses"
+            coinReward: 0,
+            nonParticipantPenalty: {}, // No penalty for non-participants
+            description: "Public execution by military methods demonstrating imperial authority"
         },
         crucifixion: {
             id: "crucifixion",
             name: "Crucifixion",
             coinCost: 0,
             resourceCost: { prisoners: 1 },
-            tracks: { church: 2 },
+            tracks: { church: 1 },
             hasWinner: false,
             consumesResources: true, // Prisoner consumed
-            coinReward: 3,
-            nonParticipantPenalty: { church: -1 },
+            coinReward: 0,
+            nonParticipantPenalty: {}, // No penalty for non-participants
             description: "Religious execution by crucifixion"
         }
     },
@@ -523,8 +531,8 @@ export const CONFIG = {
             name: "New Lands Discovered",
             description: "An expedition to the east has returned, bringing all sorts of exotic creatures to be pitted against each other.",
             effects: {
-                marketModify: {
-                    animals: 3 // Add 3 animals to the market
+                marketModifyPerPlayer: {
+                    animals: 1 // Add 1 animal per player to the market
                 }
             }
         },
@@ -543,8 +551,8 @@ export const CONFIG = {
             name: "Traveling Troop",
             description: "A group of performers from Greece are passing through Rome and decided to stay.",
             effects: {
-                marketModify: {
-                    mummers: 3 // Add 3 mummers to the market
+                marketModifyPerPlayer: {
+                    mummers: 1 // Add 1 mummer per player to the market
                 }
             }
         },
@@ -604,8 +612,8 @@ export const CONFIG = {
             name: "Slave Ship Arrives",
             description: "A merchant ship arrives from the east, bringing a fresh supply of slaves to the market.",
             effects: {
-                marketModify: {
-                    slaves: 3 // Add 3 slaves to the market
+                marketModifyPerPlayer: {
+                    slaves: 1 // Add 1 slave per player to the market
                 }
             }
         },

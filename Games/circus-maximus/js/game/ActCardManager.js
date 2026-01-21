@@ -230,7 +230,24 @@ export class ActCardManager {
 
             // Award coins (all participants get this)
             if (act.coinReward) {
-                player.addResource('coins', act.coinReward);
+                let coinAmount = 0;
+                if (typeof act.coinReward === 'string') {
+                    // Handle special coin reward types
+                    if (act.coinReward === 'perAnimal') {
+                        // Cavalry Display: 1 coin per animal owned
+                        coinAmount = player.getResource('animals') || 0;
+                    } else {
+                        // Unknown string value, default to 0
+                        console.warn(`Unknown coinReward string: ${act.coinReward}`);
+                        coinAmount = 0;
+                    }
+                } else {
+                    // Regular numeric coin reward
+                    coinAmount = act.coinReward;
+                }
+                if (coinAmount > 0) {
+                    player.addResource('coins', coinAmount);
+                }
             }
 
             // Award track movement (only winner if hasWinner, all if not)

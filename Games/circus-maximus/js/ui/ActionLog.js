@@ -35,7 +35,8 @@ export class ActionLog {
     }
     
     render() {
-        const recentEntries = this.entries.slice(-20); // Show last 20
+        // Reverse entries so newest are at top
+        const reversedEntries = [...this.entries].reverse();
         
         // Update container collapsed class to match state
         if (this.isCollapsed) {
@@ -44,15 +45,20 @@ export class ActionLog {
             this.container.classList.remove('collapsed');
         }
         
+        // Render ALL entries (not just 5) so scrolling works
+        // The CSS max-height and overflow-y: auto will handle scrolling
+        // Set explicit max-height constraint to enable scrolling (flex child needs constrained height)
+        const maxContentHeight = 5 * 60; // 300px - shows ~5 entries
+        
         this.container.innerHTML = `
             <div class="action-log-header">
                 <span>📜 Action Log</span>
                 <span class="toggle-icon">${this.isCollapsed ? '▼' : '▲'}</span>
             </div>
-            <div class="action-log-content ${this.isCollapsed ? 'collapsed' : ''}">
-                ${recentEntries.length === 0 ? 
+            <div class="action-log-content ${this.isCollapsed ? 'collapsed' : ''}" style="max-height: ${maxContentHeight}px; min-height: 0; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; flex-shrink: 1;">
+                ${reversedEntries.length === 0 ? 
                     '<div class="log-empty">No actions yet</div>' :
-                    recentEntries.map(entry => this.renderEntry(entry)).join('')
+                    reversedEntries.map(entry => this.renderEntry(entry)).join('')
                 }
             </div>
         `;
