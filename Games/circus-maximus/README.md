@@ -7,7 +7,7 @@ A fully-featured web-based simulation of the **Circus Maximus** board game, buil
 
 ## 🎮 Live Demo
 
-**[Play the game on GitHub Pages](https://yourusername.github.io/circus-maximus/)** *(Update this URL after enabling GitHub Pages)*
+**[Play the game on GitHub Pages](https://jevon365.github.io/Cursor/Games/circus-maximus/)**
 
 ## ✨ Features
 
