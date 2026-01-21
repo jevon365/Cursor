@@ -560,9 +560,6 @@ export class BiddingPopup {
         
         // Guard: only allow pass during bidOnActs
         if (freshState.currentPhase !== 'bidOnActs') {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H7',location:'BiddingPopup.js:handlePass',message:'pass ignored: wrong phase',data:{currentPhase:freshState.currentPhase,currentPlayerIndex:freshState.currentPlayerIndex,turnOrder:freshState.turnOrder},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             // Hide popup immediately if phase changed
             this.hide();
             // Don't show alert - phase already changed, this is expected
@@ -585,9 +582,6 @@ export class BiddingPopup {
         
         // Execute through game controls
         if (window.gameControls) {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H7',location:'BiddingPopup.js:handlePass',message:'pass clicked',data:{currentPlayerIndex:freshState.currentPlayerIndex,turnOrder:freshState.turnOrder,currentPhase:freshState.currentPhase},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             const result = window.gameControls.handleAction(action);
             if (result && result.success !== false) {
                 // Clear all bid amounts after passing (turn ends)

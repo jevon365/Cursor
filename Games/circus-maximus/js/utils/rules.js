@@ -202,10 +202,6 @@ export function validateResourcePurchase(action, gameState, config) {
     const marketQueue = gameState.marketQueues[action.resourceType];
     const playerInQueue = marketQueue && marketQueue.includes(currentPlayer.id);
     
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIRST-PLAYER-BUG',location:'rules.js:validateResourcePurchase',message:'validation check for first player',data:{currentPlayerId:currentPlayer.id,currentPlayerIndex:gameState.currentPlayerIndex,resourceType:action.resourceType,currentMarket:gameState.currentMarket,marketQueue,playerInQueue,turnOrder:gameState.turnOrder},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
-    
     if (!marketQueue || !playerInQueue) {
         return { valid: false, reason: `You must have a worker in ${action.resourceType} market to buy this resource` };
     }

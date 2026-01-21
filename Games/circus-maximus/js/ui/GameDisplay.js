@@ -1121,9 +1121,6 @@ export class GameDisplay {
                         e.stopPropagation();
                         if (!state.currentPlayer.isAI && canBuyFromThisMarket) {
                             this.selectedResourceType = resourceType;
-                            // #region agent log
-                            fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H9',location:'GameDisplay.js:renderMarkets',message:'resource selected',data:{resourceType, currentMarket:state.currentMarket, marketQueues:state.marketQueues, currentPlayerId:state.currentPlayer.id},timestamp:Date.now()})}).catch(()=>{});
-                            // #endregion
                             this.update();
                         } else if (!state.currentPlayer.isAI && isCurrentMarket && !playerInQueue) {
                             this.showError('You must have a worker in this market to buy resources');

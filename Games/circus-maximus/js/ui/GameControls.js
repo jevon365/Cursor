@@ -141,9 +141,6 @@ export class GameControls {
      * Handle action button click
      */
     handleAction(action) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H7',location:'GameControls.js:handleAction',message:'handleAction invoked',data:{actionType:action?.type,currentPlayer:this.gameEngine.state?.getCurrentPlayer()?.id,currentPhase:this.gameEngine.state?.currentPhase,passedPlayers:this.gameEngine.state?.passedPlayers,turnOrder:this.gameEngine.state?.turnOrder},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         const result = this.gameEngine.executeAction(action);
 
         if (result.success) {

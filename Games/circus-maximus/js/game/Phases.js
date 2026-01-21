@@ -225,12 +225,6 @@ export class Phases {
                     if (gameState.turnOrder && gameState.turnOrder.length > 0) {
                         gameState.currentPlayerIndex = gameState.turnOrder[0];
                     }
-                    // #region agent log
-                    const queueForMarket = gameState.marketQueues[firstMarket] || [];
-                    const firstPlayerInQueue = queueForMarket[0];
-                    const currentPlayer = gameState.getCurrentPlayer();
-                    fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'post-fix',hypothesisId:'FIRST-PLAYER-BUG',location:'Phases.js:onPhaseStart',message:'buyResources phase start - first player check',data:{firstMarket,marketQueues:gameState.marketQueues,queueForMarket,firstPlayerInQueue,turnOrder:gameState.turnOrder,currentPlayerIndex:gameState.currentPlayerIndex,currentPlayerId:currentPlayer?.id,players:gameState.players.map(p=>({id:p.id,name:p.name}))},timestamp:Date.now()})}).catch(()=>{});
-                    // #endregion
                 } else {
                     // No players in markets - set default turn order
                     gameState.turnOrder = gameState.players.map((_, idx) => idx);
@@ -475,9 +469,6 @@ export class Phases {
                     // If no markets have players, phase ends immediately
                     // (No one can buy resources if no one placed workers at markets)
                     const shouldEnd = !hasAnyMarkets;
-                    // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H8',location:'Phases.js:shouldEndPhase',message:'buyResources shouldEndPhase: no current market',data:{currentMarket:gameState.currentMarket,hasAnyMarkets,shouldEnd,marketQueues:gameState.marketQueues},timestamp:Date.now()})}).catch(()=>{});
-                    // #endregion
                     return shouldEnd;
                 }
                 
@@ -491,10 +482,6 @@ export class Phases {
                         const playerIndex = gameState.players.findIndex(p => p.id === playerId);
                         return playerIndex >= 0 && gameState.hasPlayerPassed(playerIndex);
                     });
-                
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/04ba2bf0-bdce-4fb4-b288-bd207f8f22c9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H8',location:'Phases.js:shouldEndPhase',message:'buyResources shouldEndPhase check',data:{currentMarket:gameState.currentMarket,currentMarketQueue,allPassedInCurrentMarket,passedPlayers:gameState.passedPlayers,currentPlayerIndex:gameState.currentPlayerIndex,turnOrder:gameState.turnOrder},timestamp:Date.now()})}).catch(()=>{});
-                // #endregion
                 
                 if (allPassedInCurrentMarket) {
                     // Check if there are more markets to resolve
