@@ -11,17 +11,28 @@
     max-height: 100%; /* Respect parent container height */
 }
 
-/* Content container - hidden when retracted */
+/* Content container - always visible for structure */
 .round-info-content {
-    opacity: 0; /* Hidden by default when retracted */
-    overflow: hidden;
-    transition: opacity 0.3s ease;
+    opacity: 1;
+    overflow: visible;
     flex: 1;
 }
 
-/* Show content when panel is hovered */
-.round-info-panel:hover .round-info-content {
+/* Content visibility - hide by default, show on hover */
+.info-section > *:not(h3) {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    margin: 0;
+    padding: 0;
+    transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+}
+
+.info-section:hover > *:not(h3) {
+    max-height: 1000px;
     opacity: 1;
+    margin: revert;
+    padding: revert;
 }
 
 .round-info-bidding {
@@ -152,40 +163,102 @@
     box-sizing: border-box;
 }
 
+/* Info section base styles - each expands/retracts independently */
 .info-section {
-    flex: 1 1 auto; /* Allow flex items to shrink and grow */
-    min-width: 250px;
-    max-width: 100%; /* Prevent overflow */
-    background: rgba(253, 245, 230, 0.7); /* Same opacity as player panels - ivory/cream background */
-    border: 2px solid rgba(205, 133, 63, 0.4); /* Semi-transparent border */
+    flex: 1 1 auto;
+    min-width: 200px;
+    max-width: 100%;
+    background: rgba(253, 245, 230, 0.7);
+    border: 2px solid rgba(205, 133, 63, 0.4);
     border-radius: 6px;
-    padding: 12px;
+    padding: 8px 12px;
     font-family: var(--font-family, 'Times New Roman', serif);
     box-sizing: border-box;
-    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    /* Specific transitions to avoid conflicts */
+    transition: 
+        background 0.3s ease,
+        border-color 0.3s ease,
+        border-width 0.3s ease,
+        padding 0.3s ease,
+        min-width 0.3s ease,
+        z-index 0s; /* z-index change should be instant */
 }
 
-/* More opaque on hover for readability */
-.info-section:hover {
-    background: rgba(253, 245, 230, 0.85); /* More opaque on hover - same as player panels */
-    border-color: rgba(205, 133, 63, 0.6);
-}
-
+/* Title styles - always visible when section is not hidden */
 .info-section h3 {
     font-weight: 700;
     color: var(--color-text, #2C1810);
     margin-bottom: 8px;
     font-size: 1.1em;
+    position: relative;
+    z-index: 1;
+    text-shadow: 
+        1px 1px 2px rgba(0, 0, 0, 0.8),
+        -1px -1px 2px rgba(255, 255, 255, 0.3);
+    white-space: nowrap;
+    transition: 
+        opacity 0.3s ease,
+        visibility 0.3s ease,
+        margin-bottom 0.3s ease,
+        max-height 0.3s ease;
 }
 
+/* Hovered section - expanded state */
+.info-section:hover {
+    padding: 12px 16px;
+    min-width: 250px;
+    background: rgba(253, 245, 230, 0.9);
+    border-color: rgba(205, 133, 63, 0.6);
+    z-index: 100;
+}
+
+.info-section:hover h3 {
+    margin-bottom: 12px;
+}
+
+/* Non-hovered sections when another is hovered - hide completely */
+.round-info-other:hover .info-section:not(:hover) {
+    background: transparent;
+    border: none;
+    border-width: 0;
+    padding: 0;
+    min-width: 0;
+    opacity: 0;
+    pointer-events: none; /* Prevent interaction with hidden sections */
+}
+
+.round-info-other:hover .info-section:not(:hover) h3 {
+    opacity: 0;
+    visibility: hidden;
+    max-height: 0;
+    margin: 0;
+    padding: 0;
+}
+
+/* Event card - smaller size */
 .info-section.event-card {
+    flex: 0 1 25%;
+    min-width: 200px;
+    max-width: 30%;
     border-color: rgba(255, 152, 0, 0.7);
-    background: rgba(253, 245, 230, 0.7); /* Same opacity as player panels */
 }
 
+/* Selected acts - larger size */
+.info-section.selected-acts {
+    flex: 2 1 auto; /* Larger flex grow value to make it bigger */
+    min-width: 300px;
+    max-width: 50%;
+}
+
+/* Execution act - smaller size */
 .info-section.execution-act {
+    flex: 0 1 25%;
+    min-width: 200px;
+    max-width: 30%;
     border-color: rgba(198, 40, 40, 0.7);
-    background: rgba(253, 245, 230, 0.7); /* Same opacity as player panels */
 }
 
 .acts-mini-grid {
@@ -234,31 +307,8 @@
     background: var(--color-accent, #8B4513);
 }
 
-/* Retracted state indicator */
-.round-info-panel::before {
-    content: 'R';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 1.2em;
-    font-weight: 700;
-    color: var(--color-text, #2C1810);
-    text-shadow: 
-        1px 1px 3px rgba(0, 0, 0, 0.9),
-        -1px -1px 2px rgba(255, 255, 255, 0.3),
-        0 0 4px rgba(0, 0, 0, 0.5);
-    opacity: 1;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-    z-index: 10;
-    white-space: nowrap;
-}
-
-/* Hide indicator when expanded */
-.round-info-panel:hover::before {
-    opacity: 0;
-}
+/* Retracted state indicator - REMOVED */
+/* The "R" indicator has been removed per user request */
 
 /* Responsive adjustments */
 @media (max-width: 1199px) {

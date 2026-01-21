@@ -141,19 +141,19 @@ export class RoundInfoPanel {
         this.container.innerHTML = `
             <div class="round-info-content">
                 <div class="round-info-other">
+                    ${event ? `
+                        <div class="info-section event-card">
+                            <h3>📜 Event: ${this.escapeHtml(event.name || 'Unknown')}</h3>
+                            <p>${this.escapeHtml(event.description || '')}</p>
+                            ${this.formatEventEffects(event)}
+                        </div>
+                    ` : ''}
                     ${selectedActs.length > 0 ? `
                         <div class="info-section selected-acts">
                             <h3>Selected Acts for This Round</h3>
                             <div class="acts-mini-grid">
                                 ${selectedActs.map(act => this.renderMiniActCard(act, state)).join('')}
                             </div>
-                        </div>
-                    ` : ''}
-                    ${event ? `
-                        <div class="info-section event-card">
-                            <h3>📜 Event: ${this.escapeHtml(event.name || 'Unknown')}</h3>
-                            <p>${this.escapeHtml(event.description || '')}</p>
-                            ${this.formatEventEffects(event)}
                         </div>
                     ` : ''}
                     ${executionAct ? `

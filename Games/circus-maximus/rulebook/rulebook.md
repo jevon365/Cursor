@@ -50,8 +50,13 @@ Each round consists of 5 phases, played in order:
 - Resources may be consumed or returned based on act type
 
 ### 5. Cleanup and Reset
-- Reset workers and bids
+- Calculate feeding costs: 1 coin per resource (mummers, animals, slaves, prisoners)
+- Calculate income: Sum of all three victory tracks (minimum 3 coins)
+- Apply net change: Income minus feeding costs
+- Return all placed workers to available pool
+- Clear all bids
 - Restock markets
+- Draw new event card for next round
 - Check win conditions
 - No player actions
 
@@ -254,7 +259,7 @@ Acts are categorized by their primary track:
    - **Tracks**: Church +2
    - **Winner**: Yes (only winner gets track advancement)
    - **Resources**: Returned (not consumed)
-   - **Coin Reward**: Winner gets 4 coins, Losers get 2 coins
+   - **Coin Reward**: All participants get 4 coins (winner gets track advancement + coins, losers get coins only)
    - **Non-Participant Penalty**: Church -1
 
 5. **Sacred Festival** (Sacred Music Festival)
@@ -316,7 +321,7 @@ Acts are categorized by their primary track:
    - **Tracks**: Empire +3, Population +1
    - **Winner**: Yes (only winner gets track advancement)
    - **Resources**: Returned (not consumed)
-   - **Coin Reward**: 5 coins (winner gets track advancement + coins, losers also get coins)
+   - **Coin Reward**: 5 coins (all participants receive coins, but only winner gets track advancement)
    - **Non-Participant Penalty**: Empire -1
 
 2. **Ludi Militaris (War Games)**
@@ -324,7 +329,7 @@ Acts are categorized by their primary track:
    - **Tracks**: Empire +3, Population +1
    - **Winner**: Yes (only winner gets track advancement)
    - **Resources**: Loser's slaves die, winner's return
-   - **Coin Reward**: 7 coins (winner gets track advancement + coins, losers also get coins)
+   - **Coin Reward**: 7 coins (all participants receive coins, but only winner gets track advancement)
    - **Non-Participant Penalty**: Empire -2
 
 3. **Triumph Parade**
@@ -338,9 +343,9 @@ Acts are categorized by their primary track:
 4. **Cavalry Display**
    - **Resource Cost**: 2 animals
    - **Tracks**: Empire +1, Church +1
-   - **Winner**: Yes (winner determined by most total animals)
+   - **Winner**: Yes (winner determined by most total animals owned)
    - **Resources**: Returned (not consumed)
-   - **Coin Reward**: 1 coin per animal (for all participants)
+   - **Coin Reward**: 1 coin per animal owned (for all participants, calculated individually)
    - **Non-Participant Penalty**: Empire -1
 
 5. **Naumachia (Naval Battle)**
@@ -349,12 +354,12 @@ Acts are categorized by their primary track:
    - **Tracks**: Empire +4, Population +2
    - **Winner**: Yes (only winner gets track advancement)
    - **Resources**: Loser's slaves die, winner's return
-   - **Coin Reward**: 8 coins (all participants receive coins regardless of victory)
+   - **Coin Reward**: 8 coins (all participants receive coins, but only winner gets track advancement)
    - **Non-Participant Penalty**: Empire -2, Population -1
 
-### Final Execution Acts (3 total, always available)
+### Final Execution Acts (3 total, 1 randomly selected per round)
 
-All execution acts require 1 prisoner and consume the prisoner when performed. They provide no coin rewards.
+Each round, one execution act is randomly selected and becomes available for bidding. All execution acts require 1 prisoner and consume the prisoner when performed. They provide no coin rewards.
 
 1. **Public Torture**
    - **Resource Cost**: 1 prisoner
@@ -453,6 +458,21 @@ Event cards are drawn at the start of each round (before phases begin) and affec
 
 ---
 
+## Cleanup Phase Details
+
+During the **Cleanup and Reset** phase, the following occurs automatically:
+
+1. **Feeding Costs**: Each player pays 1 coin per resource they own (mummers, animals, slaves, prisoners)
+2. **Income**: Each player receives coins equal to the sum of their three victory tracks (Empire + Population + Church), with a minimum of 3 coins
+3. **Net Change**: Income minus feeding costs is applied to each player's coin total
+4. **Worker Reset**: All placed workers are returned to each player's available pool
+5. **Bid Clear**: All bids are cleared
+6. **Market Restock**: Markets are restocked based on player count
+7. **Event Draw**: A new event card is drawn for the next round
+8. **Win Check**: Game checks if any player has reached 15 on any track or if round limit (10 rounds) has been reached
+
+---
+
 ## Playtesting Updates
 
 This section documents rule changes made during playtesting:
@@ -469,3 +489,4 @@ This section documents rule changes made during playtesting:
 - All game values are stored in `js/utils/config.js` for easy adjustment
 - This rulebook should be updated whenever playtesting reveals balance issues
 - Configuration changes should be documented here with reasoning
+- Final execution acts: One is randomly selected each round (not all three always available)

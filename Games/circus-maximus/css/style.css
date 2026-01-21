@@ -195,6 +195,48 @@ main.game-play-active {
     z-index: 1000;
 }
 
+/* Rules Button - Top Left Corner */
+.rules-btn {
+    position: fixed;
+    top: var(--spacing-md);
+    left: var(--spacing-md);
+    z-index: 9999;
+    background: var(--color-primary);
+    color: var(--color-card);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-sm);
+    font-size: 1.2em;
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+    transition: all 0.2s ease;
+    font-family: var(--font-family);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+}
+
+/* Hide rules button when game-play is not active */
+.screen:not(.active) .rules-btn {
+    display: none;
+}
+
+.rules-btn:hover {
+    background: var(--color-primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.rules-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
 /* Screen Management */
 .screen {
     display: none !important;
@@ -640,6 +682,146 @@ footer button:hover {
 }
 
 /* Help/Instructions */
+
+/* Rules Reference Modal */
+.rules-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+    padding: var(--spacing-md);
+    overflow-y: auto;
+}
+
+.rules-modal-content {
+    background: var(--color-card);
+    border: var(--border-width-thick) solid var(--color-border);
+    border-radius: var(--border-radius);
+    max-width: 900px;
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+}
+
+.rules-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-lg);
+    border-bottom: var(--border-width) solid var(--color-border);
+    background: var(--color-highlight);
+}
+
+.rules-modal-header h2 {
+    margin: 0;
+    color: var(--color-text);
+    font-size: 1.8em;
+}
+
+.rules-modal-close {
+    background: none;
+    border: none;
+    font-size: 2em;
+    color: var(--color-text);
+    cursor: pointer;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--border-radius);
+    transition: background-color 0.2s;
+}
+
+.rules-modal-close:hover {
+    background-color: var(--color-border);
+}
+
+.rules-modal-body {
+    padding: var(--spacing-lg);
+    overflow-y: auto;
+    flex: 1;
+}
+
+.rules-content {
+    color: var(--color-text);
+}
+
+.rules-content section {
+    margin-bottom: var(--spacing-xl);
+}
+
+.rules-content h3 {
+    color: var(--color-primary);
+    font-size: 1.5em;
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 2px solid var(--color-border);
+}
+
+.rules-content h4 {
+    color: var(--color-accent);
+    font-size: 1.2em;
+    margin-top: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+}
+
+.rules-content ul,
+.rules-content ol {
+    margin-left: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+}
+
+.rules-content li {
+    margin-bottom: var(--spacing-xs);
+    line-height: 1.7;
+}
+
+.rules-content p {
+    margin-bottom: var(--spacing-md);
+    line-height: 1.7;
+}
+
+.rules-content strong {
+    color: var(--color-primary);
+    font-weight: var(--font-weight-bold);
+}
+
+.rules-content em {
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+
+/* Responsive rules modal */
+@media (max-width: 768px) {
+    .rules-modal-content {
+        max-width: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+    
+    .rules-modal-header {
+        padding: var(--spacing-md);
+    }
+    
+    .rules-modal-header h2 {
+        font-size: 1.4em;
+    }
+    
+    .rules-modal-body {
+        padding: var(--spacing-md);
+    }
+}
 .help-content {
     max-width: 600px;
     margin: 0 auto;
@@ -1237,6 +1419,17 @@ input[type="number"] {
     .act-cards,
     .locations {
         grid-template-columns: 1fr;
+    }
+    
+    .rules-btn {
+        top: var(--spacing-xs);
+        left: var(--spacing-xs);
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        min-height: 36px;
+        font-size: 1em;
+        padding: var(--spacing-xs);
     }
 }
 

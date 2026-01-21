@@ -2,10 +2,13 @@
  * GameControls - Handles user input and game controls
  */
 
+import { RulesReference } from './RulesReference.js';
+
 export class GameControls {
     constructor(gameEngine, uiManager) {
         this.gameEngine = gameEngine;
         this.uiManager = uiManager;
+        this.rulesReference = new RulesReference();
         this.setupEventListeners();
     }
 
@@ -52,6 +55,12 @@ export class GameControls {
         const helpBtn = document.getElementById('help-btn');
         if (helpBtn) {
             helpBtn.addEventListener('click', () => this.handleHelp());
+        }
+
+        // Rules button (top left corner)
+        const rulesBtn = document.getElementById('rules-btn');
+        if (rulesBtn) {
+            rulesBtn.addEventListener('click', () => this.handleHelp());
         }
 
         const saveBtn = document.getElementById('save-btn');
@@ -184,8 +193,7 @@ export class GameControls {
      * Handle help button
      */
     handleHelp() {
-        // TODO: Show help/instructions modal
-        alert('Help: This is a placeholder. Instructions will be added after rulebook analysis.');
+        this.rulesReference.show();
     }
 
     /**
