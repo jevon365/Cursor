@@ -1,0 +1,40 @@
+# Management App - Cursor AI Rules
+
+## Project Overview
+This is a dual-application system with:
+- Backend: Node.js/Express API with PostgreSQL
+- App 1: Client Portal (React)
+- App 2: Project Management (React)
+
+## Code Style
+- Use ES6+ JavaScript features
+- Follow consistent naming conventions
+- Write clear, self-documenting code
+- Add comments for complex business logic
+
+## Backend Guidelines
+- Use Express.js best practices
+- Implement proper error handling
+- Use async/await for database operations
+- Validate all inputs
+- Use environment variables for configuration
+
+## Frontend Guidelines
+- Use functional React components with hooks
+- Keep components small and focused
+- Use custom hooks for reusable logic
+- Implement proper error boundaries
+- Use consistent styling approach
+
+## Database
+- Use PostgreSQL (SQL)
+- Use parameterized queries to prevent SQL injection
+- Implement proper migrations
+- Use transactions for multi-step operations
+
+## Security
+- Never commit .env files
+- Use JWT for authentication
+- Hash passwords with bcrypt
+- Validate and sanitize all inputs
+- Implement role-based access control

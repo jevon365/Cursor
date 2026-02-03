@@ -1,0 +1,39 @@
+services:
+  # Backend API
+  - type: web
+    name: management-app-backend
+    env: node
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        fromDatabase:
+          name: management-app-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_APP_URL
+        sync: false
+      - key: ADMIN_APP_URL
+        sync: false
+
+  # Unified App (client + admin, role-based)
+  - type: web
+    name: management-app-unified
+    env: static
+    buildCommand: cd app-unified && npm install && npm run build
+    staticPublishPath: app-unified/dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+
+databases:
+  - name: management-app-db
+    plan: free
+    databaseName: management_app
+    user: management_app_user
