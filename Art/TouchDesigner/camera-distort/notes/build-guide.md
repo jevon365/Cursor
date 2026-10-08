@@ -55,20 +55,29 @@ We bend the image a little with noise. Not a heavy glitch — just a soft shimme
 
 `out2` (an **Out** TOP) is for exposing a texture out of a component — it does **not** open a desktop window. For a real window, use a **Window COMP**.
 
+Wiring a TOP *into* the Window COMP also does **not** choose what it shows. You set **Window Operator** on the parameter page.
+
 | Step | What to do |
 |------|------------|
-| 1 | Tab in empty space → type `window` → create **Window** COMP. Rename to `out_window`. |
-| 2 | Select `out_window`. In parameters, open the **Window** page. |
-| 3 | Set **Operator** (sometimes labeled like “Window Operator”) to your final image: `warp_ref` (or `/project1/warp_ref`). Point at the Null, not at `out2`. |
-| 4 | Set a size you like (e.g. Width / Height `1280` × `720`, or match the camera). |
-| 5 | Turn **Open** on (checkbox / pulse — version-dependent). A separate window should pop up showing the warped camera. |
-| 6 | Optional: turn **Borders** off, or enable **Perform** / use **F1** Perform Mode so this Window COMP is what goes fullscreen when you perform. |
+| 1 | Tab → create **Window** COMP (e.g. `window1` or rename to `out_window`). |
+| 2 | Select it → **Window** page. |
+| 3 | Set **Window Operator** (`winop`) to `warp_ref` (or `/project1/warp_ref`). This is usually near the **top** of the Window page (above Justify…). |
+| 4 | Optional size: **Opening Size** → Custom, then Width/Height; or leave Automatic from Panel/TOP. |
+| 5 | Open the **Open/Close** parameter page (tab next to Window / Common — use the small tab arrows if you don’t see it). |
+| 6 | Click **Open as Separate Window** (pulse button). A floating window should appear. |
+| 7 | For fullscreen show later: **Open as Perform Window**, or press **F1**. You can also **Dialogs → Window Placement** and set this COMP as the Perform window. |
 
-**Quick check:** if the window is black, the Operator path is wrong or the TOP isn’t cooking — click `warp_ref` and confirm it still shows the warped feed in its viewer.
+**If you don’t see “Open” on the Window tab:** that’s normal in current TD. Open lives on the **Open/Close** page, not under Justify / Borders / Draw Window.
 
-**Why:** Window COMP = “put this operator on screen as a real OS window.” Out TOP = “this is an output plug inside the network.”
+**Other ways to open the same window:**
 
-You can leave `out2` wired or delete it later; the window does not need it.
+- Right-click the Window COMP → **Open as Separate Window**
+- Press **F1** (Perform Mode) after setting it as the Perform window
+- Textport one-liner: `op('window1').par.winopen.pulse()` (use your COMP’s name)
+
+**Quick check:** if the window is black, Window Operator path is wrong or the TOP isn’t cooking — click `warp_ref` and confirm it still shows the warped feed.
+
+**Why:** Window COMP = “put this operator on screen as a real OS window.” Out TOP = “output plug inside the network.”
 
 ---
 
