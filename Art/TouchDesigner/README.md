@@ -1,13 +1,14 @@
 # TouchDesigner Projects
 
-Interactive art and TouchDesigner learning for Jevon Owen-Kennedy.
+Interactive art and TouchDesigner learning for Jevon Owen-Kennedy. Lives under `Art/` (sibling layer to `Games/` and `Buisnes/`).
 
 ## What's here
 
-- `.cursorrules` — how Cursor should teach TD and help with networks (ELI5, practical, safe edits)
+- `.cursorrules` — TouchDesigner-specific Cursor guidance
 - `PROGRESS.md` — checklists for learning milestones and the art piece
+- `.gitignore` — TD backups and large media ignores
 
-Each new piece should get its own subfolder (with a `.toe`, optional `tox/`, `assets/`, `notes/`, `exports/`). Keep this top level light.
+Each new piece can get its own subfolder (with a `.toe`, optional `tox/`, `assets/`, `notes/`, `exports/`). Keep this folder light until a piece needs its own home.
 
 ## How to use the tracking docs
 
@@ -20,6 +21,6 @@ Each new piece should get its own subfolder (with a `.toe`, optional `tox/`, `as
 ## Getting started
 
 1. Install TouchDesigner (Derivative).
-2. Create a subfolder for your first piece.
+2. Create a subfolder for your first piece when you're ready.
 3. Save your main project as a clearly named `.toe`.
 4. Update `PROGRESS.md` after each real win.

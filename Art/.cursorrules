@@ -1,0 +1,33 @@
+# Art Projects Rules
+
+## General Guidelines
+- Keep work clear, maintainable, and easy to reopen later
+- Use clear names for files, folders, and network operators
+- Comment tricky logic (expressions, Python, custom parameters)
+- Follow best practices for the chosen medium (TouchDesigner, web, etc.)
+- Prefer practical ELI5 explanations — teach the "why," not jargon dumps
+
+## Creative Style
+- Keep networks and scripts focused and single-purpose
+- Use consistent naming conventions
+- Prefer composition (reusable components) over one giant network
+- Optimize for performance in real-time / interactive loops
+- Start small: ship a working interactive loop before adding polish
+
+## Interaction & Media
+- Interactive art should let the audience affect something (motion, color, sound, structure)
+- Separate inputs (sensors, mouse, audio) from processing and from final output
+- Don't commit huge media dumps, crash dumps, or secrets
+- Back up `.toe` / `.tox` files before destructive rewires
+
+## Project Structure
+- Organize by piece/project under this folder (e.g. `TouchDesigner/`)
+- Separate creative logic from assets and exports
+- Keep assets, notes, and reusable components in clear subfolders
+- Each project should include README, `.gitignore`, and project-specific `.cursorrules` when useful
+
+## Learning & Feedback
+- Explain operator chains simply: what goes in → what changes → what comes out
+- Test interactions thoroughly; note edge cases and performance limits
+- Track progress in project `PROGRESS.md` or short notes
+- Document known bugs, limitations, and "what I'd try next"

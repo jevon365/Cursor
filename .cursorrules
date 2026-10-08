@@ -51,7 +51,8 @@
 - Handle errors gracefully
 
 ## Project Structure
-- Each major folder (Games, Buisnes, chatttin, TouchDesigner) has its own `.cursorrules` for project-specific guidelines
+- Each major folder (Games, Buisnes, Art) has its own `.cursorrules` for project-specific guidelines; chatttin also keeps its own rules
+- Art holds interactive / media work (e.g. `Art/TouchDesigner/`); Games and Buisnes stay at the same top level
 - Organize code by feature/component
 - Separate business logic from presentation
 - Keep configuration files organized

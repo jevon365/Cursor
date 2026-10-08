@@ -1,0 +1,34 @@
+# TouchDesigner - Interactive Art Rules
+
+## General Guidelines
+- Write clean, maintainable networks and scripts
+- Use clear operator and parameter names
+- Comment complex expressions and Python
+- Follow TouchDesigner best practices for real-time work
+- Explain networks ELI5: in → change → out; define TOP/CHOP/SOP/DAT/COMP in one line when first used
+
+## Network Style
+- Keep operators focused and single-purpose
+- Use consistent naming; avoid unnamed spaghetti
+- Prefer reusable Components (`.tox`) over one giant `.toe`
+- Optimize cooking / performance in interactive loops
+
+## TouchDesigner Specifics
+- Operator families: TOP (images), CHOP (signals), SOP (geometry), DAT (tables/text), COMP (containers)
+- Know parameters vs. expressions vs. Python
+- Wire interaction inputs (mouse, keyboard, MIDI, audio, sensors) clearly
+- Use Perform Mode for showing work; Designer Mode for building
+- Never overwrite a `.toe` / `.tox` without a dated backup first
+- Prefer additive edits: build beside the old chain, then swap wires
+
+## Project Structure
+- One piece per subfolder when the work grows past a single sketch
+- Prefer: main `.toe`, `tox/`, `assets/`, `notes/`, `exports/`
+- Separate input / process / output sections in the network
+- Keep media organized; don't commit crash dumps or huge unused files
+
+## Learning & Testing
+- Track milestones in `PROGRESS.md`
+- Short notes: goal → what you built → what broke → what fixed it
+- Test interactions and edge cases; note performance limits
+- Document known bugs or limitations

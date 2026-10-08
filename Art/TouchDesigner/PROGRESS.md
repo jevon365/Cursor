@@ -36,7 +36,7 @@ Track learning and the interactive art piece here. Check items off as you go (`[
 - [ ] Mood / visual direction (colors, motion, materials) — keep it simple
 
 ### Prototype
-- [ ] Folder created for this piece (under `TouchDesigner/`)
+- [ ] Folder created for this piece (under `Art/TouchDesigner/`)
 - [ ] First working `.toe` with a visible loop
 - [ ] At least one real interaction wired in
 - [ ] Ugly-but-working version shown to someone (or recorded)
