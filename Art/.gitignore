@@ -1,0 +1,41 @@
+# Build / export outputs
+build/
+dist/
+exports/*.mov
+exports/*.mp4
+
+# Dependencies
+node_modules/
+venv/
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Archives
+*.zip
+*.rar
+*.7z
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp
