@@ -2,6 +2,8 @@
 
 Interactive art and TouchDesigner learning for Jevon Owen-Kennedy. Lives under `Art/` (sibling layer to `Games/` and `Buisnes/`).
 
+**Agents:** start with [`START_HERE.md`](START_HERE.md).
+
 ## What's here
 
 - `.cursorrules` — TouchDesigner-specific Cursor guidance
