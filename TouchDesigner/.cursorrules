@@ -1,0 +1,51 @@
+# TouchDesigner Interactive Art Rules
+
+## Who This Is For
+- Jevon Owen-Kennedy learning TouchDesigner while building interactive art
+- Practical, ELI5 help — keep it simple, show the "why," don't dump jargon
+
+## How Agents Should Talk About Networks
+- Explain operator chains like a story: what goes in → what changes → what comes out
+- Prefer plain names: "this node makes the image wiggle" over "SOP/TOP transform cascade"
+- When you must use TD terms (TOP, CHOP, SOP, DAT, COMP), define them in one short line first
+- Point to specific nodes/paths in the project when possible
+- One concept at a time; offer a tiny next experiment after each explanation
+
+## Concepts to Teach (as they come up)
+- Operator families: TOP (images), CHOP (numbers/signals), SOP (geometry), DAT (text/tables), COMP (containers)
+- Wiring, cooking, and why order/performance matter
+- Parameters vs. expressions vs. Python
+- Interaction inputs: mouse, keyboard, MIDI, audio, camera, sensors
+- Timing: `absTime`, timelines, beat/synced motion
+- Reusable pieces: Components (`.tox`) vs. full projects (`.toe`)
+- Perform Mode vs. Designer Mode for showing work
+
+## File Organization
+- One interactive art piece per subfolder under this directory
+- Prefer this layout inside each piece:
+  - `README.md` — what the piece is and how to open/run it
+  - `project.toe` (or a clear name) — main TouchDesigner project
+  - `tox/` — reusable components (`.tox`)
+  - `assets/` — media (images, audio, video) used by the network
+  - `notes/` — learning notes, sketches, "what I tried"
+  - `exports/` — renders, recordings, stills for sharing
+- Keep networks tidy: name operators clearly; avoid giant unnamed spaghetti
+- Don't commit huge media dumps or TouchDesigner crash dumps unless needed
+
+## Learning Notes
+- Capture "aha" moments in `notes/` or check off items in `PROGRESS.md`
+- Prefer short notes: goal → what you built → what broke → what fixed it
+- When teaching, link the lesson back to the current art piece when possible
+
+## Safety: Destructive Edits
+- Never wipe or overwrite a `.toe` / `.tox` without an explicit backup plan
+- Before big rewires: suggest Save As / dated copy (e.g. `project_2026-03-26_backup.toe`)
+- Prefer additive changes: new nodes beside old ones, then swap wires
+- Don't delete operators, external files, or assets unless the user asked
+- Call out risky steps clearly ("this replaces your current render chain")
+- If unsure what a network does, ask or explain first — don't "clean up" blindly
+
+## Project Style
+- Interactive art first: audience can affect something (sound, motion, color, structure)
+- Start small; ship a working loop before adding features
+- Match the learner's pace — depth on request, not a textbook dump
