@@ -26,12 +26,14 @@ Root `.cursorrules` still applies for tone (ELI5, concise, practical).
 
 ## Current scaffold state
 
-**Docs and rules only.** No `.toe` project file yet. Existing files: `.cursorrules`, `.gitignore`, `PROGRESS.md`, `README.md`, and this `START_HERE.md`.
+First piece folder exists: **`camera-distort/`** (README + `notes/build-guide.md`). No `.toe` committed yet — you create that locally in TouchDesigner.
+
+Also here: `.cursorrules`, `.gitignore`, `PROGRESS.md`, `README.md`, and this `START_HERE.md`.
 
 ## Suggested first steps
 
-1. Install / open TouchDesigner (Derivative) and save a clearly named `.toe` (or create a piece subfolder first, then save into it).
-2. Build one simple visible chain (e.g. source → effect → Null → Out) and toggle Perform Mode once.
-3. Wire one real interaction (mouse, keyboard, slider CHOP, or audio).
+1. Install / open TouchDesigner (Derivative).
+2. Follow [`camera-distort/notes/build-guide.md`](camera-distort/notes/build-guide.md): webcam → small warp → optional trail → Out; save as `camera-distort/camera-distort.toe`.
+3. Wire mouse (or a slider) to displace amount; toggle Perform Mode once.
 4. Check off the matching items in `PROGRESS.md` and add a session-log row.
-5. When the piece needs room, give it its own subfolder under `Art/TouchDesigner/` and keep assets/notes there.
+5. Keep assets / notes / exports inside `camera-distort/` as the piece grows.

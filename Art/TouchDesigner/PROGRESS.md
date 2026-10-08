@@ -31,12 +31,14 @@ Track learning and the interactive art piece here. Check items off as you go (`[
 ## Art-project milestones
 
 ### Concept
-- [ ] One-sentence idea for the interactive piece
-- [ ] What the audience does (input) and what they see/hear (output)
-- [ ] Mood / visual direction (colors, motion, materials) — keep it simple
+- [x] One-sentence idea for the interactive piece
+- [x] What the audience does (input) and what they see/hear (output)
+- [x] Mood / visual direction (colors, motion, materials) — keep it simple
+
+Piece: **camera-distort** — laptop webcam stays readable; soft noise warp + light trail. Audience looks / moves in front of the camera (optional mouse pushes warp strength). Mood: gentle, slow, not hard glitch. See `camera-distort/README.md`.
 
 ### Prototype
-- [ ] Folder created for this piece (under `Art/TouchDesigner/`)
+- [x] Folder created for this piece (under `Art/TouchDesigner/`)
 - [ ] First working `.toe` with a visible loop
 - [ ] At least one real interaction wired in
 - [ ] Ugly-but-working version shown to someone (or recorded)
@@ -56,4 +58,4 @@ Track learning and the interactive art piece here. Check items off as you go (`[
 
 | Date | What I did | Blocker / next step |
 |------|------------|---------------------|
-|      |            |                     |
+| 2026-10-08 | Scaffolded `camera-distort/` + build guide (cam → noise displace → optional feedback → mouse amount) | Open TD locally; follow `camera-distort/notes/build-guide.md`; save `camera-distort.toe` |
