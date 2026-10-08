@@ -83,14 +83,55 @@ Wiring a TOP *into* the Window COMP also does **not** choose what it shows. You 
 
 ## 3. Soft trail (optional second distortion)
 
+Feedback is a **loop**: each frame keeps a faded copy of the last frame, then mixes it with the live camera. The Feedback TOP does **not** just sit in a line — it needs a **Target TOP** pointed at the end of that loop.
+
+### Picture of the loop
+
+```
+warp_ref ──┬──► trail_fb ──► trail_dim ──► trail_comp ──► trail_mix
+           │        ▲                           │              │
+           │        └──── Target TOP = trail_mix ┴──────────────┘
+           └────────────────────────────────────┘
+                 (live also into trail_comp)
+```
+
+- `trail_fb` = Feedback TOP (looks “back” at `trail_mix`)
+- `trail_dim` = Level TOP (fades the ghost so it dies out)
+- `trail_comp` = Composite TOP (ghost + live)
+- `trail_mix` = Null TOP (end of loop + what you show)
+
+### Build it (clean order)
+
 | Step | What to do |
 |------|------------|
-| 1 | Create **Feedback** TOP named `trail_fb`. |
-| 2 | Wire `warp_ref` into the feedback chain per TD’s Feedback pattern (Target / output loop — follow the operator’s help if unsure). |
-| 3 | Mix the feedback with the live warp using **Composite** or **Add** / **Over** at **low** opacity / gain so you get a short ghost trail, not a smear storm. Name the mix `trail_mix`. |
-| 4 | Null that as `out_final` → Out. |
+| 1 | From `warp_ref`, create **Feedback** TOP → rename `trail_fb`. Wire: `warp_ref` → `trail_fb`. |
+| 2 | From `trail_fb`, create **Level** TOP → rename `trail_dim`. Wire: `trail_fb` → `trail_dim`. |
+| 3 | On `trail_dim`, lower **Opacity** or **Brightness** a bit (try ~0.85–0.95). Lower = shorter trail; higher = longer smear. |
+| 4 | Create **Composite** TOP → rename `trail_comp`. |
+| 5 | Wire **first input** of `trail_comp` ← `trail_dim` (the ghost). |
+| 6 | Wire **second input** of `trail_comp` ← `warp_ref` (the live warp). Same `warp_ref` feeds Feedback *and* Composite. |
+| 7 | On `trail_comp`, set operation to **Over** or **Add**. If it’s too strong, lower the ghost input’s opacity / use a milder blend. |
+| 8 | From `trail_comp`, create **Null** → rename `trail_mix`. Wire: `trail_comp` → `trail_mix`. |
+| 9 | Select `trail_fb` → Feedback page → **Target TOP** = `trail_mix` (or `/project1/trail_mix`). |
+| 10 | On `trail_fb`, **Reset** should be **off (0)** for the trail to run. Reset **on (1)** = pass-through only (no trail). Pulse **Reset Pulse** if the image looks stuck/weird. |
+| 11 | Point your Window’s **Window Operator** at `trail_mix` (not `warp_ref`) so the floating window shows the trail. |
 
-If Feedback feels fiddly on day one: skip this section. Warp alone already counts as a working piece.
+### If `trail_mix` has a red X
+
+1. Middle-click the red X (or hover) and read the error text.
+2. Most common fixes:
+   - `trail_fb` **Target TOP** is empty, points at the wrong node, or points at `trail_fb` itself → set it to `trail_mix`
+   - `trail_comp` only has one input wired → needs **both** `trail_dim` and `warp_ref`
+   - Cook loop / bad target → temporarily clear Target TOP, confirm `warp_ref` → `trail_fb` → `trail_dim` → `trail_comp` → `trail_mix` all show an image, then set Target to `trail_mix` again
+3. You can delete `trail_fb` / `trail_dim` / `trail_comp` / `trail_mix` and rebuild with the table above (additive: keep `warp_ref` working the whole time).
+
+### What you should see
+
+Move in front of the camera: a soft ghost should linger behind you, then fade. If it’s a muddy smear, turn `trail_dim` opacity down. If you see nothing extra, check Reset is off and Target TOP = `trail_mix`.
+
+**Why:** Feedback reads the Target TOP’s previous frame. Level fades that memory. Composite glues memory + live together. The Null at the end is the “memory address” Feedback keeps reading.
+
+If this still feels cursed: skip trails for now — warp + window already counts as a working piece. Move on to §4 (mouse).
 
 ---
 
