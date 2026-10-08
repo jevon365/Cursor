@@ -51,6 +51,27 @@ We bend the image a little with noise. Not a heavy glitch — just a soft shimme
 
 ---
 
+## 2b. Show it in a window
+
+`out2` (an **Out** TOP) is for exposing a texture out of a component — it does **not** open a desktop window. For a real window, use a **Window COMP**.
+
+| Step | What to do |
+|------|------------|
+| 1 | Tab in empty space → type `window` → create **Window** COMP. Rename to `out_window`. |
+| 2 | Select `out_window`. In parameters, open the **Window** page. |
+| 3 | Set **Operator** (sometimes labeled like “Window Operator”) to your final image: `warp_ref` (or `/project1/warp_ref`). Point at the Null, not at `out2`. |
+| 4 | Set a size you like (e.g. Width / Height `1280` × `720`, or match the camera). |
+| 5 | Turn **Open** on (checkbox / pulse — version-dependent). A separate window should pop up showing the warped camera. |
+| 6 | Optional: turn **Borders** off, or enable **Perform** / use **F1** Perform Mode so this Window COMP is what goes fullscreen when you perform. |
+
+**Quick check:** if the window is black, the Operator path is wrong or the TOP isn’t cooking — click `warp_ref` and confirm it still shows the warped feed in its viewer.
+
+**Why:** Window COMP = “put this operator on screen as a real OS window.” Out TOP = “this is an output plug inside the network.”
+
+You can leave `out2` wired or delete it later; the window does not need it.
+
+---
+
 ## 3. Soft trail (optional second distortion)
 
 | Step | What to do |
@@ -83,13 +104,13 @@ Suggested layout (left → right):
 
 ```
 INPUT          PROCESS                         OUTPUT
-cam_in         warp_noise → cam_warp           out_final → Out
+cam_in         warp_noise → cam_warp → warp_ref ──→ out_window (Window COMP)
    └→ cam_ref ──────┘         └→ trail_mix ─┘
 mouse_in → warp_amount ──(expr)──→ cam_warp weight
 ```
 
-- Rename anything still called `null1` / `noise1`
-- Hit Perform Mode and confirm it looks good fullscreen
+- Rename anything still called `null1` / `noise1` (your unused green Noise CHOP can be deleted)
+- Open `out_window`, then try Perform Mode (**F1**) for fullscreen
 - If the image cooks slowly, lower camera resolution or noise resolution before adding more effects
 
 ---

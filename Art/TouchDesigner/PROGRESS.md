@@ -5,11 +5,11 @@ Track learning and the interactive art piece here. Check items off as you go (`[
 ## Learning milestones
 
 ### Basics
-- [ ] Install / open TouchDesigner and save a `.toe`
+- [x] Install / open TouchDesigner and save a `.toe`
 - [ ] Know TOP / CHOP / SOP / DAT / COMP in one sentence each
-- [ ] Build a simple chain: source → effect → output (e.g. Movie File In → Level → Null → Out)
-- [ ] Rename operators clearly; navigate Network Editor without getting lost
-- [ ] Toggle Perform Mode and show a fullscreen output
+- [x] Build a simple chain: source → effect → output (e.g. Movie File In → Level → Null → Out)
+- [x] Rename operators clearly; navigate Network Editor without getting lost
+- [ ] Toggle Perform Mode and show a fullscreen output (use Window COMP — build-guide §2b)
 
 ### Interaction
 - [ ] Drive a parameter from a CHOP (slider, noise, or math)
@@ -59,3 +59,4 @@ Piece: **camera-distort** — laptop webcam stays readable; soft noise warp + li
 | Date | What I did | Blocker / next step |
 |------|------------|---------------------|
 | 2026-10-08 | Scaffolded `camera-distort/` + build guide (cam → noise displace → optional feedback → mouse amount) | Open TD locally; follow `camera-distort/notes/build-guide.md`; save `camera-distort.toe` |
+| 2026-10-08 | Built cam_in → cam_ref → cam_warp (displace + warp_noise) → warp_ref → out2 | Add Window COMP `out_window` pointed at `warp_ref` (see build-guide §2b); then optional trail / mouse |

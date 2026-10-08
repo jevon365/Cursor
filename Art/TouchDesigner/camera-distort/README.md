@@ -20,8 +20,10 @@ Laptop webcam feed with small, soft distortions.
 ```
 INPUT     Video Device In (cam_in) → Null (cam_ref)
 PROCESS   Noise → Displace (subtle warp) → Feedback mix (soft trail)
-OUTPUT    Null (out_final) → Out
+OUTPUT    Null (warp_ref / out_final) → Window COMP (out_window)
 ```
+
+Use a **Window COMP** for a real on-screen window. An **Out** TOP alone does not open one.
 
 Details and exact steps: [`notes/build-guide.md`](notes/build-guide.md).
 
