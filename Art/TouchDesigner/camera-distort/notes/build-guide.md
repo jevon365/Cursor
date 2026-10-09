@@ -75,6 +75,13 @@ Wiring a TOP *into* the Window COMP also does **not** choose what it shows. You 
 - Press **F1** (Perform Mode) after setting it as the Perform window
 - Textport one-liner: `op('window1').par.winopen.pulse()` (use your COMP’s name)
 
+**Reopen after closing the window:**
+
+1. Select your Window COMP (`out_window` or `window1`).
+2. **Window** page → **Window Operator** = the TOP you want to see (after the trail works, use `trail_mix`; before that, `warp_ref`).
+3. **Open/Close** page → click **Open as Separate Window** again.
+4. Sanity check: the floating window title/path matches that COMP, and the picture matches `trail_mix`’s node viewer (move — you should see the trail).
+
 **Quick check:** if the window is black, Window Operator path is wrong or the TOP isn’t cooking — click `warp_ref` and confirm it still shows the warped feed.
 
 **Why:** Window COMP = “put this operator on screen as a real OS window.” Out TOP = “output plug inside the network.”

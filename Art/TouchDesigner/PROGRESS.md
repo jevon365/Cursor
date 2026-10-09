@@ -64,3 +64,4 @@ Piece: **camera-distort** — laptop webcam stays readable; soft noise warp + li
 | 2026-10-08 | Started §3 trail (`trail_fb` / `comp1` / `trail_mix` red X) | Rebuild Feedback loop: Target TOP = `trail_mix`; Level dim; Composite ghost+live; point Window at `trail_mix` |
 | 2026-10-09 | `trail_comp` only one input; TOPs field had `trail_db`; Operation=Multiply | Clear TOPs; wire `warp_ref` as 2nd input (or type `warp_ref` in TOPs); Operation = Over/Add |
 | 2026-10-09 | `Not enough sources specified` on `trail_comp`; Connected inputs empty/insufficient | Replace Composite with **Add** TOP; two real wires from `trail_dim` + `warp_ref` (dotted Window refs don’t count) |
+| 2026-10-09 | Trail working; closed output window | Reopen via Open/Close → Open as Separate Window; Window Operator = `trail_mix` |
