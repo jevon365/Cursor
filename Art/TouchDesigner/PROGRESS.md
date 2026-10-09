@@ -62,3 +62,4 @@ Piece: **camera-distort** — laptop webcam stays readable; soft noise warp + li
 | 2026-10-08 | Built cam_in → cam_ref → cam_warp (displace + warp_noise) → warp_ref → out2 | Add Window COMP `out_window` pointed at `warp_ref` (see build-guide §2b); then optional trail / mouse |
 | 2026-10-08 | Added `window1`; Open not on Window tab | Use **Open/Close** tab → Open as Separate Window; set Window Operator = `warp_ref` (don’t rely on wiring into Window) |
 | 2026-10-08 | Started §3 trail (`trail_fb` / `comp1` / `trail_mix` red X) | Rebuild Feedback loop: Target TOP = `trail_mix`; Level dim; Composite ghost+live; point Window at `trail_mix` |
+| 2026-10-09 | `trail_comp` only one input; TOPs field had `trail_db`; Operation=Multiply | Clear TOPs; wire `warp_ref` as 2nd input (or type `warp_ref` in TOPs); Operation = Over/Add |

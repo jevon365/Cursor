@@ -109,8 +109,24 @@ warp_ref ──┬──► trail_fb ──► trail_dim ──► trail_comp �
 | 3 | On `trail_dim`, lower **Opacity** or **Brightness** a bit (try ~0.85–0.95). Lower = shorter trail; higher = longer smear. |
 | 4 | Create **Composite** TOP → rename `trail_comp`. |
 | 5 | Wire **first input** of `trail_comp` ← `trail_dim` (the ghost). |
-| 6 | Wire **second input** of `trail_comp` ← `warp_ref` (the live warp). Same `warp_ref` feeds Feedback *and* Composite. |
-| 7 | On `trail_comp`, set operation to **Over** or **Add**. If it’s too strong, lower the ghost input’s opacity / use a milder blend. |
+| 6 | Add the **live** layer (pick **one** method below). Same `warp_ref` feeds Feedback *and* this mix. |
+| 7 | On `trail_comp`, set **Operation** to **Over** or **Add** — not Multiply. If it’s too strong, lower the ghost via `trail_dim`. |
+
+**How to get 2 inputs on Composite** (this trips people up):
+
+Composite is not limited to one cable. Use either:
+
+**A — Second wire (usual):**
+1. Clear the **TOPs** text field on `trail_comp` (delete junk like `trail_db` — that name doesn’t exist and causes the red X).
+2. From `warp_ref`’s **right-side output**, drag a new wire onto `trail_comp`’s body (or left side) and release.
+3. In the **Connected Input OPs** table you should see two rows: `trail_dim` (0) and `warp_ref` (1).
+
+**B — Name in the TOPs field (no second wire):**
+1. Keep the wire from `trail_dim`.
+2. In **TOPs**, type exactly: `warp_ref` (not `trail_db`).
+3. Operation = **Over** or **Add**.
+
+Don’t mix a bad TOPs name with wires — empty TOPs + two wires, *or* one wire + valid TOPs name.
 | 8 | From `trail_comp`, create **Null** → rename `trail_mix`. Wire: `trail_comp` → `trail_mix`. |
 | 9 | Select `trail_fb` → Feedback page → **Target TOP** = `trail_mix` (or `/project1/trail_mix`). |
 | 10 | On `trail_fb`, **Reset** should be **off (0)** for the trail to run. Reset **on (1)** = pass-through only (no trail). Pulse **Reset Pulse** if the image looks stuck/weird. |
