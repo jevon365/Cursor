@@ -12,6 +12,8 @@ Interactive art and TouchDesigner learning for Jevon Owen-Kennedy. Lives under `
 
 Each new piece can get its own subfolder (with a `.toe`, optional `tox/`, `assets/`, `notes/`, `exports/`). Keep this folder light until a piece needs its own home.
 
+**Active piece:** [`camera-distort/`](camera-distort/) — laptop camera + small distortions. Start with its [`notes/build-guide.md`](camera-distort/notes/build-guide.md).
+
 ## How to use the tracking docs
 
 1. Open `PROGRESS.md` when you start or finish a session.

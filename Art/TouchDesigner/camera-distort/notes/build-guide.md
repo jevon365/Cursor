@@ -1,0 +1,228 @@
+# Build guide — camera + small distortions
+
+Goal: live laptop camera → slight warp → soft trail → fullscreen out.
+
+Keep placeholders tiny. Prefer **additive edits**: build beside the old chain, then swap wires. Backup the `.toe` before a big rewrite.
+
+---
+
+## 0. Save the project
+
+1. In TouchDesigner: **File → Save As…**
+2. Save into this folder as: `camera-distort.toe`
+3. Confirm the file sits next to this `notes/` folder.
+
+---
+
+## 1. Camera in (input)
+
+| Step | What to do |
+|------|------------|
+| 1 | Tab in empty space → create **Video Device In** TOP. Rename to `cam_in`. |
+| 2 | In its parameters, pick your **laptop webcam** (Device). Resolution can stay default. |
+| 3 | Wire `cam_in` → new **Null** TOP named `cam_ref`. |
+| 4 | Wire `cam_ref` → **Out** TOP (or use the existing `/project1/out1` if that is already your viewer out). |
+
+You should see yourself (or your room) in the viewer. If black:
+
+- Check OS camera permission for TouchDesigner
+- Try another Device index on `cam_in`
+- Close other apps that lock the webcam (Zoom, browser tabs, etc.)
+
+**Checkpoint:** camera image visible. Toggle **Perform Mode** once so you know the show path works.
+
+---
+
+## 2. Small warp (process)
+
+We bend the image a little with noise. Not a heavy glitch — just a soft shimmer.
+
+| Step | What to do |
+|------|------------|
+| 1 | Create **Noise** TOP named `warp_noise`. |
+| 2 | On `warp_noise`: set **Type** to something smooth (e.g. sparse / hermite — whatever looks soft). Turn **Period** up so it moves slowly. Keep contrast gentle. |
+| 3 | Create **Displace** TOP named `cam_warp`. |
+| 4 | Wire `cam_ref` into Displace **first input** (source image). |
+| 5 | Wire `warp_noise` into Displace **second input** (displacement map). |
+| 6 | On `cam_warp`, turn **Displace Weight** (or equivalent) **way down** — start near zero and nudge up until you see a small wiggle, not a melt. |
+| 7 | Wire `cam_warp` → Null named `warp_ref` → your Out (temporarily replace the direct `cam_ref` → Out wire). |
+
+**Why:** Noise is a moving grayscale map. Displace uses that map to push pixels sideways. Low weight = “small distortions.”
+
+---
+
+## 2b. Show it in a window
+
+`out2` (an **Out** TOP) is for exposing a texture out of a component — it does **not** open a desktop window. For a real window, use a **Window COMP**.
+
+Wiring a TOP *into* the Window COMP also does **not** choose what it shows. You set **Window Operator** on the parameter page.
+
+| Step | What to do |
+|------|------------|
+| 1 | Tab → create **Window** COMP (e.g. `window1` or rename to `out_window`). |
+| 2 | Select it → **Window** page. |
+| 3 | Set **Window Operator** (`winop`) to `warp_ref` (or `/project1/warp_ref`). This is usually near the **top** of the Window page (above Justify…). |
+| 4 | Optional size: **Opening Size** → Custom, then Width/Height; or leave Automatic from Panel/TOP. |
+| 5 | Open the **Open/Close** parameter page (tab next to Window / Common — use the small tab arrows if you don’t see it). |
+| 6 | Click **Open as Separate Window** (pulse button). A floating window should appear. |
+| 7 | For fullscreen show later: **Open as Perform Window**, or press **F1**. You can also **Dialogs → Window Placement** and set this COMP as the Perform window. |
+
+**If you don’t see “Open” on the Window tab:** that’s normal in current TD. Open lives on the **Open/Close** page, not under Justify / Borders / Draw Window.
+
+**Other ways to open the same window:**
+
+- Right-click the Window COMP → **Open as Separate Window**
+- Press **F1** (Perform Mode) after setting it as the Perform window
+- Textport one-liner: `op('window1').par.winopen.pulse()` (use your COMP’s name)
+
+**Reopen after closing the window:**
+
+1. Select your Window COMP (`out_window` or `window1`).
+2. **Window** page → **Window Operator** = the TOP you want to see (after the trail works, use `trail_mix`; before that, `warp_ref`).
+3. **Open/Close** page → click **Open as Separate Window** again.
+4. Sanity check: the floating window title/path matches that COMP, and the picture matches `trail_mix`’s node viewer (move — you should see the trail).
+
+**Quick check:** if the window is black, Window Operator path is wrong or the TOP isn’t cooking — click `warp_ref` and confirm it still shows the warped feed.
+
+**Why:** Window COMP = “put this operator on screen as a real OS window.” Out TOP = “output plug inside the network.”
+
+---
+
+## 3. Soft trail (optional second distortion)
+
+Feedback is a **loop**: each frame keeps a faded copy of the last frame, then mixes it with the live camera. The Feedback TOP does **not** just sit in a line — it needs a **Target TOP** pointed at the end of that loop.
+
+### Picture of the loop
+
+```
+warp_ref ──┬──► trail_fb ──► trail_dim ──► trail_comp ──► trail_mix
+           │        ▲                           │              │
+           │        └──── Target TOP = trail_mix ┴──────────────┘
+           └────────────────────────────────────┘
+                 (live also into trail_comp)
+```
+
+- `trail_fb` = Feedback TOP (looks “back” at `trail_mix`)
+- `trail_dim` = Level TOP (fades the ghost so it dies out)
+- `trail_comp` = Composite TOP (ghost + live)
+- `trail_mix` = Null TOP (end of loop + what you show)
+
+### Build it (clean order)
+
+| Step | What to do |
+|------|------------|
+| 1 | From `warp_ref`, create **Feedback** TOP → rename `trail_fb`. Wire: `warp_ref` → `trail_fb`. |
+| 2 | From `trail_fb`, create **Level** TOP → rename `trail_dim`. Wire: `trail_fb` → `trail_dim`. |
+| 3 | On `trail_dim`, lower **Opacity** or **Brightness** a bit (try ~0.85–0.95). Lower = shorter trail; higher = longer smear. |
+| 4 | Create **Add** TOP → rename `trail_comp` (Add is easier than Composite — it wants exactly two wires). |
+| 5 | Wire `trail_dim` → **left/top input** of `trail_comp` (ghost). |
+| 6 | Wire `warp_ref` → **second input** of `trail_comp` (live). Drag from `warp_ref`’s right outlet onto `trail_comp` again — a second cable is allowed. |
+| 7 | Confirm both previews show on `trail_comp` (no red X). If too bright, lower `trail_dim` opacity more. |
+
+**If you still see `Error: Not enough sources specified`:**
+
+That means TD does not see two image sources yet. Dotted grey lines (like `warp_ref` → `out_window`) are **references**, not image wires — they don’t count as Composite/Add inputs.
+
+Do this reset on the mix node:
+1. Delete `trail_comp` (the broken one).
+2. Tab → type `add` → create **Add** TOP → rename `trail_comp`.
+3. Drag wire: `trail_dim` → `trail_comp`.
+4. Drag wire: `warp_ref` → `trail_comp` (second cable).
+5. Middle-click `trail_comp`: Connected Input OPs should list **two** names. Error should be gone.
+6. Wire `trail_comp` → `trail_mix` again if that link broke.
+
+**Composite alternative** (only if you prefer it): clear its **TOPs** field, then type exactly  
+`trail_dim warp_ref`  
+(space-separated). Operation = **Add** or **Over**. Still need Feedback **Target TOP** = `trail_mix`.
+| 8 | From `trail_comp`, create **Null** → rename `trail_mix`. Wire: `trail_comp` → `trail_mix`. |
+| 9 | Select `trail_fb` → Feedback page → **Target TOP** = `trail_mix` (or `/project1/trail_mix`). |
+| 10 | On `trail_fb`, **Reset** should be **off (0)** for the trail to run. Reset **on (1)** = pass-through only (no trail). Pulse **Reset Pulse** if the image looks stuck/weird. |
+| 11 | Point your Window’s **Window Operator** at `trail_mix` (not `warp_ref`) so the floating window shows the trail. |
+
+### If `trail_mix` has a red X
+
+1. Middle-click the red X (or hover) and read the error text.
+2. Most common fixes:
+   - `trail_fb` **Target TOP** is empty, points at the wrong node, or points at `trail_fb` itself → set it to `trail_mix`
+   - `trail_comp` only has one input wired → needs **both** `trail_dim` and `warp_ref`
+   - Cook loop / bad target → temporarily clear Target TOP, confirm `warp_ref` → `trail_fb` → `trail_dim` → `trail_comp` → `trail_mix` all show an image, then set Target to `trail_mix` again
+3. You can delete `trail_fb` / `trail_dim` / `trail_comp` / `trail_mix` and rebuild with the table above (additive: keep `warp_ref` working the whole time).
+
+### What you should see
+
+Move in front of the camera: a soft ghost should linger behind you, then fade. If it’s a muddy smear, turn `trail_dim` opacity down. If you see nothing extra, check Reset is off and Target TOP = `trail_mix`.
+
+**Why:** Feedback reads the Target TOP’s previous frame. Level fades that memory. Add/Composite glues memory + live together. The Null at the end is the “memory address” Feedback keeps reading.
+
+### What controls trail “timing” (length)
+
+The trail is **not** driven by the timeline at the bottom. Each frame, the loop keeps a faded copy of the last frame. **How much you fade** = how long the ghost lasts.
+
+| Control | Where | What it does |
+|---------|--------|--------------|
+| **Main knob** | `trail_dim` → **Opacity** (or **Brightness 1** slightly under `1`) | Lower = shorter trail (dies fast). Closer to `1` = longer trail (lingers). Try Opacity `0.85`–`0.95`. |
+| Feedback on/off | `trail_fb` → **Reset** | `0` / off = trail runs. `1` / on = pass-through, no trail. |
+| Clear stuck smear | `trail_fb` → **Reset Pulse** | Wipes the memory once. |
+| Mix balance | Add/Composite order + `trail_dim` strength | Too strong ghost = muddy; too weak = “no trail.” |
+
+**Reset `trail_dim` if it looks neon / inverted / crushed:**
+
+On the Level **Pre** page, turn **Invert off**, put **Black Level** near `0`, **Brightness 1** near `1` (or `0.9`), **Gamma** near `1`, **Contrast** near `1`. Then only nudge Opacity / Brightness down a little. Invert + high contrast does *not* time the trail — it just cooks the colors every loop.
+
+**Wire check (important):**
+
+```
+warp_ref → trail_fb → trail_dim → trail_comp ← warp_ref (live, second input)
+                              └──────────→ trail_mix   ← Feedback Target TOP points here
+```
+
+Do **not** close the loop by wiring `trail_mix` / `trail_comp` back into `trail_fb`’s input. The loop closes only via Feedback’s **Target TOP** parameter.
+
+If this still feels cursed: skip trails for now — warp + window already counts as a working piece. Move on to §4 (mouse).
+
+---
+
+## 4. One real interaction (mouse)
+
+| Step | What to do |
+|------|------------|
+| 1 | Create **Mouse In** CHOP named `mouse_in`. |
+| 2 | Create **Math** CHOP named `warp_amount` to remap mouse X (or Y) into a small range, e.g. `0.01` → `0.08` (tune to taste). |
+| 3 | On `cam_warp`’s Displace Weight parameter, use an expression that reads `warp_amount` (e.g. `op('warp_amount')['chan1']` — match your channel name). |
+| 4 | Move the mouse: warp should get a bit stronger / softer. |
+
+**Why:** CHOPs are signals. Driving a TOP parameter from a CHOP is the core “interaction” habit in TD.
+
+---
+
+## 5. Clean names + Perform Mode
+
+Suggested layout (left → right):
+
+```
+INPUT          PROCESS                         OUTPUT
+cam_in         warp_noise → cam_warp → warp_ref ──→ out_window (Window COMP)
+   └→ cam_ref ──────┘         └→ trail_mix ─┘
+mouse_in → warp_amount ──(expr)──→ cam_warp weight
+```
+
+- Rename anything still called `null1` / `noise1` (your unused green Noise CHOP can be deleted)
+- Open `out_window`, then try Perform Mode (**F1**) for fullscreen
+- If the image cooks slowly, lower camera resolution or noise resolution before adding more effects
+
+---
+
+## 6. After it works
+
+1. Check off matching boxes in `Art/TouchDesigner/PROGRESS.md`
+2. Add a session-log row (what worked / what’s next)
+3. Optional: short screen recording into `exports/` (usually gitignored if `.mp4`)
+4. Optional later: extract the warp block into a `.tox` under `tox/`
+
+---
+
+## Mood / visual direction (keep simple)
+
+- Live camera stays readable
+- Soft, slow motion — not strobe / hard glitch
+- Neutral grade for now (no heavy color grading until the loop feels good)
