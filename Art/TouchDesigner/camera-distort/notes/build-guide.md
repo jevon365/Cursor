@@ -107,26 +107,26 @@ warp_ref ──┬──► trail_fb ──► trail_dim ──► trail_comp �
 | 1 | From `warp_ref`, create **Feedback** TOP → rename `trail_fb`. Wire: `warp_ref` → `trail_fb`. |
 | 2 | From `trail_fb`, create **Level** TOP → rename `trail_dim`. Wire: `trail_fb` → `trail_dim`. |
 | 3 | On `trail_dim`, lower **Opacity** or **Brightness** a bit (try ~0.85–0.95). Lower = shorter trail; higher = longer smear. |
-| 4 | Create **Composite** TOP → rename `trail_comp`. |
-| 5 | Wire **first input** of `trail_comp` ← `trail_dim` (the ghost). |
-| 6 | Add the **live** layer (pick **one** method below). Same `warp_ref` feeds Feedback *and* this mix. |
-| 7 | On `trail_comp`, set **Operation** to **Over** or **Add** — not Multiply. If it’s too strong, lower the ghost via `trail_dim`. |
+| 4 | Create **Add** TOP → rename `trail_comp` (Add is easier than Composite — it wants exactly two wires). |
+| 5 | Wire `trail_dim` → **left/top input** of `trail_comp` (ghost). |
+| 6 | Wire `warp_ref` → **second input** of `trail_comp` (live). Drag from `warp_ref`’s right outlet onto `trail_comp` again — a second cable is allowed. |
+| 7 | Confirm both previews show on `trail_comp` (no red X). If too bright, lower `trail_dim` opacity more. |
 
-**How to get 2 inputs on Composite** (this trips people up):
+**If you still see `Error: Not enough sources specified`:**
 
-Composite is not limited to one cable. Use either:
+That means TD does not see two image sources yet. Dotted grey lines (like `warp_ref` → `out_window`) are **references**, not image wires — they don’t count as Composite/Add inputs.
 
-**A — Second wire (usual):**
-1. Clear the **TOPs** text field on `trail_comp` (delete junk like `trail_db` — that name doesn’t exist and causes the red X).
-2. From `warp_ref`’s **right-side output**, drag a new wire onto `trail_comp`’s body (or left side) and release.
-3. In the **Connected Input OPs** table you should see two rows: `trail_dim` (0) and `warp_ref` (1).
+Do this reset on the mix node:
+1. Delete `trail_comp` (the broken one).
+2. Tab → type `add` → create **Add** TOP → rename `trail_comp`.
+3. Drag wire: `trail_dim` → `trail_comp`.
+4. Drag wire: `warp_ref` → `trail_comp` (second cable).
+5. Middle-click `trail_comp`: Connected Input OPs should list **two** names. Error should be gone.
+6. Wire `trail_comp` → `trail_mix` again if that link broke.
 
-**B — Name in the TOPs field (no second wire):**
-1. Keep the wire from `trail_dim`.
-2. In **TOPs**, type exactly: `warp_ref` (not `trail_db`).
-3. Operation = **Over** or **Add**.
-
-Don’t mix a bad TOPs name with wires — empty TOPs + two wires, *or* one wire + valid TOPs name.
+**Composite alternative** (only if you prefer it): clear its **TOPs** field, then type exactly  
+`trail_dim warp_ref`  
+(space-separated). Operation = **Add** or **Over**. Still need Feedback **Target TOP** = `trail_mix`.
 | 8 | From `trail_comp`, create **Null** → rename `trail_mix`. Wire: `trail_comp` → `trail_mix`. |
 | 9 | Select `trail_fb` → Feedback page → **Target TOP** = `trail_mix` (or `/project1/trail_mix`). |
 | 10 | On `trail_fb`, **Reset** should be **off (0)** for the trail to run. Reset **on (1)** = pass-through only (no trail). Pulse **Reset Pulse** if the image looks stuck/weird. |
