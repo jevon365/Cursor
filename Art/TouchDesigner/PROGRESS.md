@@ -65,3 +65,4 @@ Piece: **camera-distort** — laptop webcam stays readable; soft noise warp + li
 | 2026-10-09 | `trail_comp` only one input; TOPs field had `trail_db`; Operation=Multiply | Clear TOPs; wire `warp_ref` as 2nd input (or type `warp_ref` in TOPs); Operation = Over/Add |
 | 2026-10-09 | `Not enough sources specified` on `trail_comp`; Connected inputs empty/insufficient | Replace Composite with **Add** TOP; two real wires from `trail_dim` + `warp_ref` (dotted Window refs don’t count) |
 | 2026-10-09 | Trail working; closed output window | Reopen via Open/Close → Open as Separate Window; Window Operator = `trail_mix` |
+| 2026-10-09 | Trail timing unclear; `trail_dim` had Invert + high contrast | Trail length = fade on `trail_dim` (Opacity ~0.85–0.95); reset Invert/contrast; Target TOP closes loop |

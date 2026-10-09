@@ -152,7 +152,31 @@ Do this reset on the mix node:
 
 Move in front of the camera: a soft ghost should linger behind you, then fade. If it’s a muddy smear, turn `trail_dim` opacity down. If you see nothing extra, check Reset is off and Target TOP = `trail_mix`.
 
-**Why:** Feedback reads the Target TOP’s previous frame. Level fades that memory. Composite glues memory + live together. The Null at the end is the “memory address” Feedback keeps reading.
+**Why:** Feedback reads the Target TOP’s previous frame. Level fades that memory. Add/Composite glues memory + live together. The Null at the end is the “memory address” Feedback keeps reading.
+
+### What controls trail “timing” (length)
+
+The trail is **not** driven by the timeline at the bottom. Each frame, the loop keeps a faded copy of the last frame. **How much you fade** = how long the ghost lasts.
+
+| Control | Where | What it does |
+|---------|--------|--------------|
+| **Main knob** | `trail_dim` → **Opacity** (or **Brightness 1** slightly under `1`) | Lower = shorter trail (dies fast). Closer to `1` = longer trail (lingers). Try Opacity `0.85`–`0.95`. |
+| Feedback on/off | `trail_fb` → **Reset** | `0` / off = trail runs. `1` / on = pass-through, no trail. |
+| Clear stuck smear | `trail_fb` → **Reset Pulse** | Wipes the memory once. |
+| Mix balance | Add/Composite order + `trail_dim` strength | Too strong ghost = muddy; too weak = “no trail.” |
+
+**Reset `trail_dim` if it looks neon / inverted / crushed:**
+
+On the Level **Pre** page, turn **Invert off**, put **Black Level** near `0`, **Brightness 1** near `1` (or `0.9`), **Gamma** near `1`, **Contrast** near `1`. Then only nudge Opacity / Brightness down a little. Invert + high contrast does *not* time the trail — it just cooks the colors every loop.
+
+**Wire check (important):**
+
+```
+warp_ref → trail_fb → trail_dim → trail_comp ← warp_ref (live, second input)
+                              └──────────→ trail_mix   ← Feedback Target TOP points here
+```
+
+Do **not** close the loop by wiring `trail_mix` / `trail_comp` back into `trail_fb`’s input. The loop closes only via Feedback’s **Target TOP** parameter.
 
 If this still feels cursed: skip trails for now — warp + window already counts as a working piece. Move on to §4 (mouse).
 
